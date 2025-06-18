@@ -39,6 +39,35 @@ To enable secure GitHub OAuth integration, you must set your GitHub OAuth **Clie
    REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
    ```
 
+---
+
+### 🔧 Configuring the OAuth Token Exchange Endpoint
+
+By default, the dashboard POSTs the OAuth code to:
+```
+http://localhost:3001/token
+```
+To use your own FastAPI backend (or any endpoint matching the x-www-form-urlencoded contract):
+
+1. Set the environment variable in your `github_user_dashboard/.env` file as:
+   ```
+   REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
+   ```
+2. (Optional) For internal testing only, **never commit secrets to source control**:
+   ```
+   REACT_APP_GITHUB_CLIENT_SECRET=<your_client_secret>   # [For demo/server-side experimentation only!]
+   ```
+
+**Endpoint rules:**
+- React will POST `code` and `client_id` as x-www-form-urlencoded.
+- Example body sent:
+  ```
+  code=abc123&client_id=Ov23lioFpdZyTjydbxm0
+  ```
+- Do **not** expose your GitHub OAuth `client_secret` to frontend!
+
+See below for sample FastAPI contract and usage.
+
 ### 💡 Configurable Token Exchange Endpoint for OAuth (FastAPI or Node)
 
 By default, the dashboard POSTs the OAuth code to:
@@ -59,34 +88,41 @@ REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
 ## 🚦 Integration Contract for the Token Exchange Endpoint (FastAPI or compatible)
 
 **Frontend POST request**
-- The React app POSTs to the configured endpoint:
-  - Endpoint URL: from `REACT_APP_TOKEN_ENDPOINT` or defaults to `http://localhost:3001/token`
-- **Request format**: x-www-form-urlencoded
-- **Required fields**: `code=<OAUTH_CODE>` (optionally `client_id=<client_id>`, NEVER send `client_secret` from client)
+- The React app POSTs to your configured endpoint for the OAuth code exchange:
+  - **Endpoint URL:** from `REACT_APP_TOKEN_ENDPOINT` or defaults to `http://localhost:3001/token`
+- **Request format:** `x-www-form-urlencoded`
+- **Required fields:** `code=<OAUTH_CODE>` (optionally `client_id=<client_id>`)  
+  - :warning: **NEVER send `client_secret` from client code!** Only backend should hold secrets.
 
-- Example request (x-www-form-urlencoded):
-    ```http
-    POST /token
-    Content-Type: application/x-www-form-urlencoded
+**Sample POST request (for user/backends to test):**
+```http
+POST /token
+Host: localhost:8000
+Content-Type: application/x-www-form-urlencoded
 
-    code=<OAUTH_CODE>&client_id=<OPTIONAL_CLIENT_ID>
-    ```
+code=<OAUTH_CODE>&client_id=<OPTIONAL_CLIENT_ID>
+```
+- Example using `curl`:
+  ```bash
+  curl -X POST http://localhost:8000/token \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "code=the_oauth_code_here&client_id=Ov23lioFpdZyTjydbxm0"
+  ```
 
 **Backend (FastAPI) Response**
-- JSON, status 200, containing the token:
-    ```json
-    { "access_token": "<mock_or_real_access_token>" }
-    ```
-- If there is an error, return non-200 status (ideally with an `error` field).
+- JSON body, status 200, on success (example):
+  ```json
+  { "access_token": "<mock_or_real_access_token>" }
+  ```
+- On error: return non-200 status and ideally include an `error` field in the JSON body.
 
-**Required request/response schema:**
-| Frontend sends (POST, x-www-form-urlencoded) | Backend replies (JSON 200-ok)     |
-|----------------------------|-----------------------------------|
-| code=<string> (& client_id)  | { "access_token": "<string>" }    |
+| Frontend sends (POST, x-www-form-urlencoded)     | Backend replies (JSON 200-ok)         |
+|--------------------------------------------------|----------------------------------------|
+| code=<string> [& client_id=<string>]             | { "access_token": "<string>" }         |
 
 ---
 
-#### Example: Minimal FastAPI token endpoint (accepting form data)
+#### Example: Minimal FastAPI token endpoint (accepting form data, matches contract)
 
 ```python
 from fastapi import FastAPI, Form
@@ -98,11 +134,12 @@ app = FastAPI()
 @app.post("/token")
 async def exchange_token(
     code: str = Form(...),
-    client_id: str = Form(None)
+    client_id: str = Form(None),
+    client_secret: str = Form(None)
 ):
     if not code:
         return JSONResponse({"error": "Missing code"}, status_code=400)
-    # Validate or check `code` and `client_id` as needed...
+    # Optionally check client_id/client_secret as needed (server-side only!)
     return {"access_token": "mock_access_token"}
 ```
 

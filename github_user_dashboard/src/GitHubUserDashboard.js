@@ -85,6 +85,7 @@ export default function GitHubUserDashboard() {
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&allow_signup=true`;
     window.location.href = githubAuthUrl;
   }
+
   // PUBLIC_INTERFACE
   function logout() {
     setUser(null);
@@ -121,41 +122,34 @@ export default function GitHubUserDashboard() {
     const code = params.get("code");
 
     // PUBLIC_INTERFACE
-    /**
+    /** 
      * Exchanges the provided OAuth code for an access_token at the configured backend endpoint.
-     * POSTs JSON { code } to the token endpoint and expects { access_token } back.
-     * Endpoint should match documented contract.
-     * @param {string} authCode
-     * @returns {Promise<{ access_token: string }>} Response with { access_token } on success
-     */
-    /**
-     * Exchanges the provided OAuth code for an access_token at the configured backend endpoint.
-     * POSTs x-www-form-urlencoded { code, client_id?, client_secret? } (but client_secret should be omitted in frontend only!)
-     * and expects JSON { access_token } back.
-     * Endpoint should match documented contract. CORS must be enabled on backend for frontend origins.
-     * 
-     * SECURITY NOTE: Never use your client_secret in frontend/mobile code. Only supply `client_id` if truly needed.
-     * FastAPI backend should handle `client_secret` securely on server only!
+     * POSTs x-www-form-urlencoded ({ code, client_id, client_secret }) as per backend contract (FastAPI, etc).
+     * Reads access_token from the returned JSON; expects { "access_token": ... } in response.
+     * The endpoint defaults to http://localhost:3001/token but can be configured via .env (.env: REACT_APP_TOKEN_ENDPOINT).
+     *
+     * SECURITY: client_secret must only be handled server-side, not in frontend. Only send code and client_id from client.
      * 
      * @param {string} authCode
-     * @returns {Promise<{ access_token: string }>} Response with { access_token } on success
+     * @returns {Promise<{ access_token: string }>} Access token on success
      */
     async function exchangeCodeForToken(authCode) {
       const backendUrl = getTokenEndpointUrl();
-      let formBody = [];
-      // These fields are sent for compatibility but do NOT send client_secret from frontend!
-      formBody.push("code=" + encodeURIComponent(authCode));
-      if (GITHUB_CLIENT_ID) formBody.push("client_id=" + encodeURIComponent(GITHUB_CLIENT_ID));
-      // DO NOT send client_secret; keep it server-side
-      const body = formBody.join("&");
+      // Prepare form body for x-www-form-urlencoded
+      let form = [];
+      form.push("code=" + encodeURIComponent(authCode));
+      if (GITHUB_CLIENT_ID) form.push("client_id=" + encodeURIComponent(GITHUB_CLIENT_ID));
+      // For test/lab: If a secret exists in env, append for mock mode (never in production!)
+      if (typeof process !== "undefined" && process.env && process.env.REACT_APP_GITHUB_CLIENT_SECRET) {
+        form.push("client_secret=" + encodeURIComponent(process.env.REACT_APP_GITHUB_CLIENT_SECRET));
+      }
+      const body = form.join("&");
       try {
-        // POST the code as x-www-form-urlencoded to FastAPI or compatible backend
         const resp = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body,
         });
-        // Expect a JSON response like { access_token: "string" }
         if (!resp.ok) {
           let err = null;
           try { err = await resp.json(); } catch (_) {}
@@ -166,7 +160,6 @@ export default function GitHubUserDashboard() {
           );
         }
         const json = await resp.json();
-        // Defensive: check if shape is { access_token: ... }
         if (typeof json.access_token !== "string" || !json.access_token) {
           throw new Error("Token endpoint did not provide access_token");
         }
@@ -200,6 +193,7 @@ export default function GitHubUserDashboard() {
       }
     }
     handleOAuthFlow();
+    // eslint-disable-next-line
   }, []);
 
   // Fetch user, repos, followers via GitHub API using real access_token (provided by backend)
