@@ -69,14 +69,14 @@ export default function GitHubUserDashboard() {
   // Try CRA/Vite standard first
   if (typeof process !== "undefined" &&
       process.env &&
-      (process.env.REACT_APP_GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID)) {
+      (process.env.REACT_APP_GITHUB_CLIENT_ID || 'Ov23lioFpdZyTjydbxm0')) {
     // CRA: REACT_APP_GITHUB_CLIENT_ID, Vite: VITE_GITHUB_CLIENT_ID
-    GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID;
+    GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID || 'Ov23lioFpdZyTjydbxm0';
   } else if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GITHUB_CLIENT_ID) {
     // Vite through import.meta.env
-    GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
+    GITHUB_CLIENT_ID = 'Ov23lioFpdZyTjydbxm0';
   } else {
-    GITHUB_CLIENT_ID = undefined;
+    GITHUB_CLIENT_ID = 'Ov23lioFpdZyTjydbxm0';
   }
 
   if (!GITHUB_CLIENT_ID) {
@@ -120,22 +120,47 @@ export default function GitHubUserDashboard() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
-    // For demonstration, we just fake the process and show a hint.
-    // In a real app: exchange `code` for access_token via your backend.
-    if (code && !accessToken) {
-      setFetchError("OAuth flow code received. Exchange it at your backend to get the access_token.");
-      // Remove code from URL for cleanliness (single-page-app)
-      params.delete("code");
-      window.history.replaceState({}, "", window.location.pathname);
+    // Mock the backend OAuth code exchange: If code is present (redirected from GitHub), simulate backend API for access_token
+    async function mockExchangeCodeForToken(authCode) {
+      // Simulate async backend call delay for a more realistic effect
+      // You could replace this with: await fetch('/mock-backend/token', {...}) if you want a custom endpoint
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          // "Fake" access_token payload
+          resolve({
+            access_token: "mock_github_token_123456789",
+            token_type: "bearer",
+            scope: "read:user repo"
+          });
+        }, 750); // 750ms delay
+      });
     }
 
-    // Optionally check localStorage for persisted session.
-    const storedToken = window.localStorage.getItem("gh_access_token");
-    const storedUser = window.localStorage.getItem("gh_user");
-    if (storedToken && storedUser) {
-      setAccessToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    async function handleOAuthFlow() {
+      if (code && !accessToken) {
+        setFetchError(""); // Remove any old error
+        try {
+          // Simulates a backend call that exchanges code for token
+          const response = await mockExchangeCodeForToken(code);
+          setAccessToken(response.access_token);
+          window.localStorage.setItem("gh_access_token", response.access_token);
+        } catch (e) {
+          setFetchError("Mocked backend token exchange failed.");
+        }
+        // Remove code from URL for cleanliness (single-page-app)
+        params.delete("code");
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+      // Optionally check localStorage for persisted session.
+      const storedToken = window.localStorage.getItem("gh_access_token");
+      const storedUser = window.localStorage.getItem("gh_user");
+      if (storedToken && storedUser) {
+        setAccessToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
     }
+
+    handleOAuthFlow();
   }, []);
 
   // --- Fetch user data if authenticated ---
@@ -187,9 +212,11 @@ export default function GitHubUserDashboard() {
           <button className="btn btn-large" style={{ background: "#0366d6", color: "#fff", marginTop: 20 }} onClick={loginWithGitHub}>
             Sign in with GitHub
           </button>
+          {/* Show fetch error only if not related to OAuth flow, since it's now mocked */}
           <div style={{ color: "#e36209", marginTop: 16 }}>{fetchError ? fetchError : null}</div>
           <div style={{ color: "#767676", marginTop: 24, fontSize: "0.87em" }}>
-            <b>Demo only:</b> Please add your GitHub OAuth app Client ID.<br/> <i>This client is a frontend-only demo and not secure for prod.</i>
+            <b>Note:</b> This is a frontend-only demo. OAuth code exchange with GitHub is <b>mocked</b> for development.<br/>
+            You can test the dashboard flow without a real backend.
           </div>
         </div>
       );

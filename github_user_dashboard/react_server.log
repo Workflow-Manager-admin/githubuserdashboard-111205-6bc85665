@@ -11,9 +11,9 @@ asset bundle.js 1.42 MiB [emitted] (name: main)
 asset index.html 1.98 KiB [emitted]
 runtime modules 27.5 KiB 14 modules
 modules by path ./node_modules/ 1.24 MiB 31 modules
-modules by path ./src/ 29.6 KiB
+modules by path ./src/ 30.9 KiB
   modules by path ./src/*.css 7.49 KiB 4 modules
-  modules by path ./src/*.js 22.1 KiB
+  modules by path ./src/*.js 23.4 KiB
     ./src/index.js 530 bytes [built] [code generated]
     + 2 modules
 modules by path ./.ve/ 15.1 KiB
@@ -24,34 +24,104 @@ modules by path ./.ve/ 15.1 KiB
     ./.ve/EditorOverlay.css 2.25 KiB [built] [code generated]
     ./node_modules/css-loader/dist/cjs.js!./.ve/EditorOverlay.css 697 bytes [built] [code generated]
   ./.ve/EditorOverlay.jsx 1.58 KiB [built] [code generated]
-webpack 5.99.9 compiled successfully in 1229 ms
-assets by status 1.98 KiB [cached] 1 asset
-assets by path *.js 1.42 MiB
-  asset bundle.js 1.42 MiB [emitted] (name: main)
-  asset main.e7124a3a5a99efbfb10c.hot-update.js 2.72 KiB [emitted] [immutable] [hmr] (name: main)
-asset main.e7124a3a5a99efbfb10c.hot-update.json 28 bytes [emitted] [immutable] [hmr]
-Entrypoint main 1.42 MiB = bundle.js 1.42 MiB main.e7124a3a5a99efbfb10c.hot-update.js 2.72 KiB
-cached modules 1.28 MiB [cached] 42 modules
-runtime modules 27.5 KiB 14 modules
-./src/App.js 657 bytes [built] [code generated]
-webpack 5.99.9 compiled successfully in 86 ms
-assets by status 1.98 KiB [cached] 1 asset
-assets by path *.js 1.44 MiB
-  asset bundle.js 1.42 MiB [emitted] (name: main)
-  asset main.7709e131f16ec2fc2e99.hot-update.js 27.8 KiB [emitted] [immutable] [hmr] (name: main)
-asset main.7709e131f16ec2fc2e99.hot-update.json 28 bytes [emitted] [immutable] [hmr]
-Entrypoint main 1.44 MiB = bundle.js 1.42 MiB main.7709e131f16ec2fc2e99.hot-update.js 27.8 KiB
-cached modules 1.26 MiB [cached] 42 modules
-runtime modules 27.5 KiB 14 modules
-./src/GitHubUserDashboard.js 21.1 KiB [built] [code generated]
-webpack 5.99.9 compiled successfully in 139 ms
+webpack 5.99.9 compiled successfully in 1351 ms
 assets by status 1.98 KiB [cached] 1 asset
 assets by path *.js 1.45 MiB
   asset bundle.js 1.42 MiB [emitted] (name: main)
-  asset main.17a02a1cb98f1f4b988b.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
-asset main.17a02a1cb98f1f4b988b.hot-update.json 28 bytes [emitted] [immutable] [hmr]
-Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.17a02a1cb98f1f4b988b.hot-update.js 28.8 KiB
+  asset main.805fa6e67d9dc1621ea2.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.805fa6e67d9dc1621ea2.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.805fa6e67d9dc1621ea2.hot-update.js 28.8 KiB
 cached modules 1.26 MiB [cached] 42 modules
 runtime modules 27.5 KiB 14 modules
 ./src/GitHubUserDashboard.js 22.3 KiB [built] [code generated]
-webpack 5.99.9 compiled successfully in 99 ms
+webpack 5.99.9 compiled successfully in 205 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.eaf1cc87700e1f6bb217.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.eaf1cc87700e1f6bb217.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.eaf1cc87700e1f6bb217.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.3 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 91 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.26150df78627ee698d5a.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.26150df78627ee698d5a.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.26150df78627ee698d5a.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.2 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 84 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.84c334c26e94b61b732a.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.84c334c26e94b61b732a.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.84c334c26e94b61b732a.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.3 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 87 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.fbbbf323c059e8f2cf07.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.fbbbf323c059e8f2cf07.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.fbbbf323c059e8f2cf07.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.2 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 111 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.d1405d9045f99ffe9048.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.d1405d9045f99ffe9048.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.d1405d9045f99ffe9048.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.3 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 90 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.aae6861169f76046deeb.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.aae6861169f76046deeb.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.aae6861169f76046deeb.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.2 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 115 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.bef42f633209b8156a13.hot-update.js 28.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.bef42f633209b8156a13.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.bef42f633209b8156a13.hot-update.js 28.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 22.3 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 74 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.b7e885a36ad921aea7cd.hot-update.js 29.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.b7e885a36ad921aea7cd.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.b7e885a36ad921aea7cd.hot-update.js 29.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 23.2 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 180 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.174692bde4b2b7ab52b0.hot-update.js 29.8 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.174692bde4b2b7ab52b0.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.174692bde4b2b7ab52b0.hot-update.js 29.8 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 23.2 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 100 ms
