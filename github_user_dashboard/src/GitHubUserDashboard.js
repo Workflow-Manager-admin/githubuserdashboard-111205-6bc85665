@@ -100,6 +100,7 @@ export default function GitHubUserDashboard() {
    * Determines the backend token exchange URL.
    * Checks environment variable REACT_APP_TOKEN_ENDPOINT, otherwise defaults to a reasonable value.
    * You can set this in your .env file or via process env in deployment.
+   * The URL should be the FastAPI or other backend POST endpoint to exchange code for access_token.
    */
   function getTokenEndpointUrl() {
     // 1. CRA env variable (recommended): REACT_APP_TOKEN_ENDPOINT, e.g., http://localhost:3001/token or FastAPI URL
@@ -121,24 +122,37 @@ export default function GitHubUserDashboard() {
 
     // PUBLIC_INTERFACE
     /**
-     * Exchanges the provided auth code for an access_token at the configured backend endpoint.
+     * Exchanges the provided OAuth code for an access_token at the configured backend endpoint.
      * POSTs JSON { code } to the token endpoint and expects { access_token } back.
-     * Endpoint can be a FastAPI or Express server.
+     * Endpoint should match documented contract.
+     * @param {string} authCode
+     * @returns {Promise<{ access_token: string }>} Response with { access_token } on success
      */
     async function exchangeCodeForToken(authCode) {
+      const backendUrl = getTokenEndpointUrl();
       try {
-        const backendUrl = getTokenEndpointUrl();
+        // POST the code to FastAPI or Node backend
         const resp = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: authCode }),
         });
+        // Expect a JSON response like { access_token: "string" }
         if (!resp.ok) {
           let err = null;
           try { err = await resp.json(); } catch (_) {}
-          throw new Error(err && err.error ? err.error : "Token exchange failed");
+          throw new Error(
+            (err && err.error)
+              ? err.error
+              : `Token exchange failed (HTTP ${resp.status}): ${resp.statusText}`
+          );
         }
-        return await resp.json();
+        const json = await resp.json();
+        // Defensive: check if shape is { access_token: ... }
+        if (typeof json.access_token !== "string" || !json.access_token) {
+          throw new Error("Token endpoint did not provide access_token");
+        }
+        return json;
       } catch (err) {
         throw err;
       }
@@ -148,13 +162,14 @@ export default function GitHubUserDashboard() {
       if (code && !accessToken) {
         setFetchError("");
         try {
+          // POST to FastAPI token endpoint and extract the returned token.
           const response = await exchangeCodeForToken(code);
           setAccessToken(response.access_token);
           window.localStorage.setItem("gh_access_token", response.access_token);
         } catch (e) {
           setFetchError(`Failed to exchange OAuth code: ${e.message}`);
         }
-        // Remove code from URL bar
+        // Remove code from URL bar (for user privacy/clean UX)
         params.delete("code");
         window.history.replaceState({}, "", window.location.pathname);
       }

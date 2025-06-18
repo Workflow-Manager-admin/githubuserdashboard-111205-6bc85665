@@ -45,21 +45,43 @@ By default, the dashboard POSTs the OAuth code to:
 ```
 http://localhost:3001/token
 ```
-To use your own external FastAPI backend for code exchange, add this to your `.env` file:
+
+#### 🔧 To use your own FastAPI backend for code exchange:
+Set the environment variable in your `github_user_dashboard/.env` file as:
 ```
 REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
 ```
-Or use the deployed FastAPI endpoint URL as needed.
+- You can use any backend that accepts the documented contract.  
+- The React dashboard will POST the user's OAuth code to whichever endpoint you set.
 
-**Token Exchange Protocol:**  
-The frontend will POST to the endpoint with:
-```json
-{ "code": "<OAUTH_CODE>" }
-```
-The backend should reply (status 200) with:
-```json
-{ "access_token": "<mock_access_token>" }
-```
+---
+
+## 🚦 Integration Contract for the Token Exchange Endpoint (FastAPI or compatible)
+
+**Frontend POST request**
+- The React app POSTs to the configured endpoint:
+  - Endpoint URL: from `REACT_APP_TOKEN_ENDPOINT` or defaults to `http://localhost:3001/token`
+- Example request:
+    ```http
+    POST /token
+    Content-Type: application/json
+
+    { "code": "<OAUTH_CODE>" }
+    ```
+
+**Backend (FastAPI) Response**
+- JSON, status 200, containing the token:
+    ```json
+    { "access_token": "<mock_or_real_access_token>" }
+    ```
+- If there is an error, return non-200 status (ideally with an `error` field).
+
+**Required request/response schema:**
+| Frontend sends (POST JSON) | Backend replies (JSON 200-ok)     |
+|----------------------------|-----------------------------------|
+| { "code": "<string>" }     | { "access_token": "<string>" }    |
+
+---
 
 #### Example: Minimal FastAPI token endpoint
 
@@ -75,12 +97,14 @@ async def exchange_token(data: dict):
     code = data.get("code")
     if not code:
         return JSONResponse({"error": "Missing code"}, status_code=400)
-    # Verify code... (mock/demo)
+    # Validate or check `code` here...
     return {"access_token": "mock_access_token"}
 ```
 
-You may run this (with `uvicorn main:app --reload --port 8000`) and point the dashboard config as above.
+- Run with: `uvicorn main:app --reload --port 8000`
+- Set your React dashboard `.env` to point to this endpoint as shown above.
 
+> **Do NOT commit client secrets to source control.** Never expose your Client Secret in frontend code.
 
 3. Restart your development server if it's running.
 
