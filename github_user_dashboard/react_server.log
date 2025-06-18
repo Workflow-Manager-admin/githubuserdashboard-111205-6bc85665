@@ -46,3 +46,13 @@ cached modules 1.26 MiB [cached] 42 modules
 runtime modules 27.5 KiB 14 modules
 ./src/GitHubUserDashboard.js 23.2 KiB [built] [code generated]
 webpack 5.99.9 compiled successfully in 112 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.2d1701127e658405192b.hot-update.js 30 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.2d1701127e658405192b.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.2d1701127e658405192b.hot-update.js 30 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 23.2 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 90 ms

@@ -22,6 +22,6 @@ app.post('/token', (req, res) => {
 // (Optional) Health check for debug
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => {
-  console.log(`[MOCK-BACKEND] Listening at http://localhost:${PORT}/token`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[MOCK-BACKEND] Listening at http://0.0.0.0:${PORT}/token`);
 });

@@ -104,10 +104,8 @@ export default function GitHubUserDashboard() {
       try {
         // Use correct backend endpoint for token exchange (mock backend on port 3001, not 4000)
         // And support deployment on VSCode internal URL if available in the browser environment
-        const backendUrl =
-          window.location.hostname.startsWith("vscode-internal-")
-            ? "https://vscode-internal-5194-beta.beta01.cloud.kavia.ai:3001/token"
-            : "http://localhost:3001/token";
+        // Always POST to the remote backend endpoint for /token
+        const backendUrl = "https://vscode-internal-5194-beta.beta01.cloud.kavia.ai:3001/token";
         const resp = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
