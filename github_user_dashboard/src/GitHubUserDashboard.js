@@ -133,47 +133,46 @@ export default function GitHubUserDashboard() {
     // PUBLIC_INTERFACE
     /** 
      * PUBLIC_INTERFACE
-     * Exchanges the OAuth code for an access token by posting code/client_id/client_secret (if set)
-     * as x-www-form-urlencoded to the configured FastAPI (or compatible) backend endpoint.
-     * Endpoint is settable via REACT_APP_TOKEN_EXCHANGE_ENDPOINT or REACT_APP_TOKEN_ENDPOINT in .env/config.
-     * Reads access_token from JSON response per documented contract.
+     * Exchanges the OAuth code for an access token. Mirrors user-provided requirements:
+     * - POSTs to the backend endpoint with 'application/x-www-form-urlencoded'
+     * - Includes code, client_id (always), client_secret (if defined), redirect_uri (always), and state (if present)
+     * - Endpoint comes from .env config (REACT_APP_TOKEN_EXCHANGE_ENDPOINT strongly preferred)
+     * - Expects JSON { access_token } from FastAPI-compliant backend. CORS policy is assumed handled backend-side.
      * 
      * @param {string} authCode - The authorization code received from GitHub OAuth redirect.
      * @returns {Promise<{ access_token: string }>} The JSON object containing the access token.
      */
     async function exchangeCodeForToken(authCode) {
       /*
-        Exchanges OAuth code for access_token by POSTing to a backend endpoint
-        as 'application/x-www-form-urlencoded', sending code, client_id, and (optionally)
-        client_secret if it is available in env, to the endpoint defined in .env config.
-        The returned JSON should contain { access_token }.
+        Exchanges OAuth code for access_token:
+        - POST to backend endpoint (from .env) as application/x-www-form-urlencoded
+        - Always sends: code, client_id, redirect_uri
+        - Optionally: client_secret from env (for local/dev only, never in real prod), state if present
+        - Expects: JSON { access_token: ... } (per FastAPI spec), error handling if no/invalid token
+        - See README for backend CORS requirements (allow http://localhost:3000, restrict in prod)
       */
       const backendUrl = getTokenEndpointUrl();
 
-      // Prepare payload
+      // Required payload
       const payload = {
         code: authCode,
         client_id: GITHUB_CLIENT_ID,
         redirect_uri: REDIRECT_URI
       };
-      // Add optional client_secret for dev/demo if present (not in production!)
-      let clientSecret = null;
+      // Optionally include client_secret for demos/dev (never browser prod)
       if (
         typeof process !== "undefined" &&
         process.env &&
         process.env.REACT_APP_GITHUB_CLIENT_SECRET
       ) {
-        clientSecret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
+        payload.client_secret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
       }
-      if (clientSecret) {
-        payload.client_secret = clientSecret;
-      }
-      // Add state if present in localStorage (OAuth best-practice)
-      const storedState = window.localStorage.getItem("gh_oauth_state");
-      if (storedState) payload.state = storedState;
+      // Include state if set by OAuth flow
+      const oauthState = window.localStorage.getItem("gh_oauth_state");
+      if (oauthState) payload.state = oauthState;
 
-      // Use URLSearchParams to encode x-www-form-urlencoded body
-      const formBody = new URLSearchParams(payload);
+      // x-www-form-urlencoded body (URLSearchParams)
+      const requestBody = new URLSearchParams(payload).toString();
 
       try {
         const response = await fetch(backendUrl, {
@@ -182,18 +181,18 @@ export default function GitHubUserDashboard() {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json"
           },
-          body: formBody.toString(),
+          body: requestBody,
         });
         if (!response.ok) {
-          let err = null;
-          try { err = await response.json(); } catch (_) {}
+          let errJson = null;
+          try { errJson = await response.json(); } catch (_) {}
           throw new Error(
-            (err && err.error)
-              ? err.error
-              : `Token exchange failed (HTTP ${response.status}): ${response.statusText}`
+            (errJson && errJson.error) ?
+            errJson.error :
+            `Token exchange failed (HTTP ${response.status}): ${response.statusText}`
           );
         }
-        // Expect JSON: { "access_token": ... }
+        // FastAPI: expect JSON { access_token }
         const data = await response.json();
         if (!data || typeof data.access_token !== "string" || !data.access_token) {
           throw new Error("Token endpoint did not provide access_token");
