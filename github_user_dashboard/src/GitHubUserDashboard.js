@@ -128,14 +128,32 @@ export default function GitHubUserDashboard() {
      * @param {string} authCode
      * @returns {Promise<{ access_token: string }>} Response with { access_token } on success
      */
+    /**
+     * Exchanges the provided OAuth code for an access_token at the configured backend endpoint.
+     * POSTs x-www-form-urlencoded { code, client_id?, client_secret? } (but client_secret should be omitted in frontend only!)
+     * and expects JSON { access_token } back.
+     * Endpoint should match documented contract. CORS must be enabled on backend for frontend origins.
+     * 
+     * SECURITY NOTE: Never use your client_secret in frontend/mobile code. Only supply `client_id` if truly needed.
+     * FastAPI backend should handle `client_secret` securely on server only!
+     * 
+     * @param {string} authCode
+     * @returns {Promise<{ access_token: string }>} Response with { access_token } on success
+     */
     async function exchangeCodeForToken(authCode) {
       const backendUrl = getTokenEndpointUrl();
+      let formBody = [];
+      // These fields are sent for compatibility but do NOT send client_secret from frontend!
+      formBody.push("code=" + encodeURIComponent(authCode));
+      if (GITHUB_CLIENT_ID) formBody.push("client_id=" + encodeURIComponent(GITHUB_CLIENT_ID));
+      // DO NOT send client_secret; keep it server-side
+      const body = formBody.join("&");
       try {
-        // POST the code to FastAPI or Node backend
+        // POST the code as x-www-form-urlencoded to FastAPI or compatible backend
         const resp = await fetch(backendUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: authCode }),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body,
         });
         // Expect a JSON response like { access_token: "string" }
         if (!resp.ok) {

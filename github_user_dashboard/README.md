@@ -61,12 +61,15 @@ REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
 **Frontend POST request**
 - The React app POSTs to the configured endpoint:
   - Endpoint URL: from `REACT_APP_TOKEN_ENDPOINT` or defaults to `http://localhost:3001/token`
-- Example request:
+- **Request format**: x-www-form-urlencoded
+- **Required fields**: `code=<OAUTH_CODE>` (optionally `client_id=<client_id>`, NEVER send `client_secret` from client)
+
+- Example request (x-www-form-urlencoded):
     ```http
     POST /token
-    Content-Type: application/json
+    Content-Type: application/x-www-form-urlencoded
 
-    { "code": "<OAUTH_CODE>" }
+    code=<OAUTH_CODE>&client_id=<OPTIONAL_CLIENT_ID>
     ```
 
 **Backend (FastAPI) Response**
@@ -77,34 +80,49 @@ REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
 - If there is an error, return non-200 status (ideally with an `error` field).
 
 **Required request/response schema:**
-| Frontend sends (POST JSON) | Backend replies (JSON 200-ok)     |
+| Frontend sends (POST, x-www-form-urlencoded) | Backend replies (JSON 200-ok)     |
 |----------------------------|-----------------------------------|
-| { "code": "<string>" }     | { "access_token": "<string>" }    |
+| code=<string> (& client_id)  | { "access_token": "<string>" }    |
 
 ---
 
-#### Example: Minimal FastAPI token endpoint
+#### Example: Minimal FastAPI token endpoint (accepting form data)
 
 ```python
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Form
 from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
 # PUBLIC_INTERFACE
 @app.post("/token")
-async def exchange_token(data: dict):
-    code = data.get("code")
+async def exchange_token(
+    code: str = Form(...),
+    client_id: str = Form(None)
+):
     if not code:
         return JSONResponse({"error": "Missing code"}, status_code=400)
-    # Validate or check `code` here...
+    # Validate or check `code` and `client_id` as needed...
     return {"access_token": "mock_access_token"}
 ```
 
 - Run with: `uvicorn main:app --reload --port 8000`
 - Set your React dashboard `.env` to point to this endpoint as shown above.
 
-> **Do NOT commit client secrets to source control.** Never expose your Client Secret in frontend code.
+**CORS Notice:**  
+Make sure CORS is enabled on your FastAPI backend to allow requests from your frontend (e.g., React dev server at `http://localhost:3000`).  
+In FastAPI, use:
+```python
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React dev
+    allow_methods=["*"], allow_headers=["*"],
+)
+```
+- For production, set more restrictive origins.
+
+> **Security Note:** Never expose your GitHub OAuth **client_secret** in frontend code. Your backend should be the only code handling secrets!
 
 3. Restart your development server if it's running.
 
