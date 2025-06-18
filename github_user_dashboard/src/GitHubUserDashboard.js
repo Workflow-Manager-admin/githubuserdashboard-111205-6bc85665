@@ -55,8 +55,8 @@ export default function GitHubUserDashboard() {
   const [fetchError, setFetchError] = useState("");
 
   // --- GitHub OAuth Integration ---
-  // For demo: use Implicit Grant Flow (for real app, use backend) or show how to plug your client_id.
-  const GITHUB_CLIENT_ID = "<Your_GitHub_OAuth_App_Client_ID>";
+  // For demo: use Implicit Grant Flow using environment variable for client_id to enhance security and flexibility.
+  const GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID;
   const REDIRECT_URI = window.location.origin; // Should match registered OAuth app
   const scope = "read:user repo"; // Adjust as needed
 

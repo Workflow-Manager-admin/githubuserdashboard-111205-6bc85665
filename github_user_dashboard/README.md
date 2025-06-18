@@ -27,6 +27,22 @@ Removing it will break editor integration and visual editing features.
 
 ## Getting Started
 
+### ⚠️ Environment Variable Setup for GitHub OAuth
+
+To enable secure GitHub OAuth integration, you must set your GitHub OAuth **Client ID** as an environment variable.
+
+1. In the `github_user_dashboard/` directory, create a file named **.env** (if not already present).
+
+2. Add your GitHub client ID (for example):
+
+   ```
+   REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
+   ```
+
+3. Restart your development server if it's running.
+
+**Do NOT commit client secrets to source control.** Never expose your Client Secret in frontend code.
+
 In the project directory, you can run:
 
 ### `npm start`
