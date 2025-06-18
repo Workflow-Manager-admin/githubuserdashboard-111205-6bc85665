@@ -102,7 +102,13 @@ export default function GitHubUserDashboard() {
     async function exchangeCodeForToken(authCode) {
       // POST code to local mock backend, get { access_token }
       try {
-        const resp = await fetch("http://localhost:4000/token", {
+        // Use correct backend endpoint for token exchange (mock backend on port 3001, not 4000)
+        // And support deployment on VSCode internal URL if available in the browser environment
+        const backendUrl =
+          window.location.hostname.startsWith("vscode-internal-")
+            ? "https://vscode-internal-5194-beta.beta01.cloud.kavia.ai:3001/token"
+            : "http://localhost:3001/token";
+        const resp = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: authCode }),
@@ -190,7 +196,10 @@ export default function GitHubUserDashboard() {
           </button>
           <div style={{ color: "#e36209", marginTop: 16 }}>{fetchError ? fetchError : null}</div>
           <div style={{ color: "#767676", marginTop: 24, fontSize: "0.87em" }}>
-            <b>Note:</b> OAuth code exchange is now handled by the <b>mock backend</b> at <code>http://localhost:4000/token</code>.<br/>
+            <b>Note:</b> OAuth code exchange is handled by the <b>mock backend</b> at <code>http://localhost:3001/token</code>
+            <br/>
+            If running remotely, the endpoint is <code>https://vscode-internal-5194-beta.beta01.cloud.kavia.ai:3001/token</code>.
+            <br/>
             No frontend-only stubbing or demo user data remains. The returned access_token will be used for GitHub API calls.
           </div>
         </div>
