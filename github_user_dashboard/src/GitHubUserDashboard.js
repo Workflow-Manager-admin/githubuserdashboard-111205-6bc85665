@@ -167,9 +167,69 @@ export default function GitHubUserDashboard() {
   useEffect(() => {
     if (!accessToken) return;
 
+    // Helper to detect if we're in a mocked frontend/dev-only mode
+    const isMockToken = (token) => typeof token === "string" && token.startsWith("mock_");
+
     async function getUserData() {
       try {
         setFetchError("");
+
+        // If using a mocked access token, provide fake/mock data instead of real API calls
+        if (isMockToken(accessToken)) {
+          // Mock GitHub user profile
+          const fakeUser = {
+            login: "mockuser",
+            name: "Mock User",
+            bio: "This is a mock GitHub user profile for frontend development mode.",
+            avatar_url: "https://avatars.githubusercontent.com/u/583231?v=4", // use Octocat
+            html_url: "https://github.com/mockuser",
+            repos_url: "https://api.github.com/users/mockuser/repos",
+            followers_url: "https://api.github.com/users/mockuser/followers",
+          };
+          setUser(fakeUser);
+          window.localStorage.setItem("gh_user", JSON.stringify(fakeUser));
+
+          // Mock repositories
+          const fakeRepos = [
+            {
+              id: 1,
+              name: "mock-repo-one",
+              html_url: "https://github.com/mockuser/mock-repo-one",
+              description: "Fake repository number one.",
+              language: "JavaScript",
+              stargazers_count: 42
+            },
+            {
+              id: 2,
+              name: "mock-repo-two",
+              html_url: "https://github.com/mockuser/mock-repo-two",
+              description: "Fake repository number two.",
+              language: "Python",
+              stargazers_count: 99
+            }
+          ];
+          setRepos(fakeRepos);
+
+          // Mock followers
+          const fakeFollowers = [
+            {
+              id: 201,
+              login: "follower1",
+              avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4",
+              html_url: "https://github.com/follower1"
+            },
+            {
+              id: 202,
+              login: "follower2",
+              avatar_url: "https://avatars.githubusercontent.com/u/10137?v=4",
+              html_url: "https://github.com/follower2"
+            }
+          ];
+          setFollowers(fakeFollowers);
+          return;
+        }
+
+        // --- REAL API CALLS IF NOT MOCKED ---
         // Fetch user profile
         const resUser = await fetch("https://api.github.com/user", {
           headers: { Authorization: `Bearer ${accessToken}` }
