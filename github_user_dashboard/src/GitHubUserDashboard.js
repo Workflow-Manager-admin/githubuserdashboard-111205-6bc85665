@@ -149,11 +149,64 @@ export default function GitHubUserDashboard() {
   // Fetch user, repos, followers via GitHub API using real access_token (provided by backend)
   useEffect(() => {
     if (!accessToken) return;
+
+    // If in demo/mock mode, supply hardcoded data instead of fetching from API
+    if (accessToken === "mock_access_token") {
+      // Demo user profile (simulate structure of GitHub's /user endpoint)
+      const demoUser = {
+        login: "demo-user",
+        id: 12345678,
+        avatar_url: "https://avatars.githubusercontent.com/u/9919", // Octocat
+        html_url: "https://github.com/demo-user",
+        name: "Demo User",
+        bio: "👋 This is a demo/mock profile for development mode (no real GitHub data!).",
+        repos_url: "https://api.github.com/users/demo-user/repos",
+        followers_url: "https://api.github.com/users/demo-user/followers"
+      };
+      const demoRepos = [
+        {
+          id: 1001,
+          name: "mock-repo-1",
+          html_url: "https://github.com/demo-user/mock-repo-1",
+          description: "A cool demo project.",
+          language: "JavaScript",
+          stargazers_count: 42
+        },
+        {
+          id: 1002,
+          name: "demo-portfolio",
+          html_url: "https://github.com/demo-user/demo-portfolio",
+          description: "Portfolio website – for showcase only",
+          language: "CSS",
+          stargazers_count: 10
+        }
+      ];
+      const demoFollowers = [
+        {
+          login: "mockfriend1",
+          id: 10099,
+          avatar_url: "https://avatars.githubusercontent.com/u/583231", // Octocat alt
+          html_url: "https://github.com/mockfriend1"
+        },
+        {
+          login: "test-pal",
+          id: 10100,
+          avatar_url: "https://avatars.githubusercontent.com/u/8888",
+          html_url: "https://github.com/test-pal"
+        }
+      ];
+      setUser(demoUser);
+      setRepos(demoRepos);
+      setFollowers(demoFollowers);
+      setFetchError(""); // clear any prior errors
+      window.localStorage.setItem("gh_user", JSON.stringify(demoUser));
+      return;
+    }
+
     // PUBLIC_INTERFACE
     async function getUserData() {
       try {
         setFetchError("");
-        // Only real API, no frontend stubbing allowed!
         const resUser = await fetch("https://api.github.com/user", {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
@@ -182,6 +235,25 @@ export default function GitHubUserDashboard() {
 
   // --- UI Page Routing ---
   function renderContent() {
+    // Helper: show demo/mock mode info banner
+    function DemoModeNotice() {
+      return (
+        <div style={{
+          background: "#e36209",
+          color: "#fff",
+          borderRadius: 6,
+          margin: "18px 0",
+          padding: "12px 20px",
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          textAlign: "center"
+        }}>
+          <span style={{marginRight: 10}}>DEMO / MOCK MODE:</span>
+          You are viewing demo/mock dashboard data. This is not real GitHub data. No API calls were made.
+        </div>
+      );
+    }
+
     if (!accessToken || !user) {
       return (
         <div style={{
@@ -204,19 +276,31 @@ export default function GitHubUserDashboard() {
       );
     }
 
+    // If in demo/mock mode, show orange warning banner above dashboard
+    const isDemoMode = accessToken === "mock_access_token";
+
     // Dashboard switch
     switch (page) {
       case "dashboard":
         return (
-          <DashboardHome user={user} repos={repos} followers={followers}/>
+          <div>
+            {isDemoMode && <DemoModeNotice />}
+            <DashboardHome user={user} repos={repos} followers={followers}/>
+          </div>
         );
       case "repos":
         return (
-          <RepoList repos={repos}/>
+          <div>
+            {isDemoMode && <DemoModeNotice />}
+            <RepoList repos={repos}/>
+          </div>
         );
       case "followers":
         return (
-          <FollowerList followers={followers}/>
+          <div>
+            {isDemoMode && <DemoModeNotice />}
+            <FollowerList followers={followers}/>
+          </div>
         );
       default:
         return null;
