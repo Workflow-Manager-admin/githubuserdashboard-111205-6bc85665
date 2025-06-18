@@ -39,6 +39,8 @@ const Navbar = ({ user, onLogout, onPageChange, currentPage }) => (
   </nav>
 );
 
+console.log("GitHubUserDashboard.js loaded");
+
 // PUBLIC_INTERFACE
 export default function GitHubUserDashboard() {
   /**
