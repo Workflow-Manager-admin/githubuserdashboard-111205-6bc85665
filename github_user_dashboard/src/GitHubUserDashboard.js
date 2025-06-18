@@ -133,55 +133,61 @@ export default function GitHubUserDashboard() {
      * @returns {Promise<{ access_token: string }>} The JSON object containing the access token.
      */
     async function exchangeCodeForToken(authCode) {
+      /**
+       * Exchanges OAuth code for access_token via FastAPI endpoint.
+       * Sends code/client_id/client_secret as x-www-form-urlencoded,
+       * in strict alignment with requirements and CORS compatibility.
+       */
       const backendUrl = (
         (typeof process !== "undefined" && process.env && process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT)
         ? process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT
         : getTokenEndpointUrl()
       );
-      // Standard required POST body fields
-      const form = new URLSearchParams();
-      form.append("code", authCode);
-      if (GITHUB_CLIENT_ID) form.append("client_id", GITHUB_CLIENT_ID);
-
-      // Optionally provide client_secret (test/dev only; never commit value)
+      // Construct URLSearchParams for x-www-form-urlencoded
+      const payload = {
+        code: authCode,
+        client_id: GITHUB_CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+      };
+      // Conditionally include optional client_secret (dev/demo only)
       if (
         typeof process !== "undefined" &&
         process.env &&
         process.env.REACT_APP_GITHUB_CLIENT_SECRET
       ) {
-        form.append("client_secret", process.env.REACT_APP_GITHUB_CLIENT_SECRET);
+        payload.client_secret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
       }
+      // Optionally include state if available (OAuth best-practice)
+      const storedState = window.localStorage.getItem("gh_oauth_state");
+      if (storedState) payload.state = storedState;
 
-      // Always provide redirect_uri (OAuth contract)
-      if (REDIRECT_URI) form.append("redirect_uri", REDIRECT_URI);
-      // State parameter if present in session/history (optional)
-      const state = window.localStorage.getItem("gh_oauth_state");
-      if (state) form.append("state", state);
+      // Use new URLSearchParams to build form body
+      const formBody = new URLSearchParams(payload);
 
       try {
-        const resp = await fetch(backendUrl, {
+        const response = await fetch(backendUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json"
           },
-          body: form.toString(),
+          body: formBody.toString(),
         });
-        if (!resp.ok) {
+        if (!response.ok) {
           let err = null;
-          try { err = await resp.json(); } catch (_) {}
+          try { err = await response.json(); } catch (_) {}
           throw new Error(
             (err && err.error)
               ? err.error
-              : `Token exchange failed (HTTP ${resp.status}): ${resp.statusText}`
+              : `Token exchange failed (HTTP ${response.status}): ${response.statusText}`
           );
         }
-        // Expect FastAPI (or compatible) to return JSON: { "access_token": "<string>" }
-        const json = await resp.json();
-        if (!json || typeof json.access_token !== "string" || !json.access_token) {
+        // Expect JSON: { "access_token": ... }
+        const data = await response.json();
+        if (!data || typeof data.access_token !== "string" || !data.access_token) {
           throw new Error("Token endpoint did not provide access_token");
         }
-        return json;
+        return data;
       } catch (err) {
         throw err;
       }
