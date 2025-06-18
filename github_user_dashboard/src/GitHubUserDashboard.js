@@ -150,56 +150,63 @@ export default function GitHubUserDashboard() {
   useEffect(() => {
     if (!accessToken) return;
 
-    // If in demo/mock mode, supply hardcoded data instead of fetching from API
+    // Demo/mock mode: supply hardcoded data and short-circuit all API calls
     if (accessToken === "mock_access_token") {
-      // Demo user profile (simulate structure of GitHub's /user endpoint)
-      const demoUser = {
-        login: "demo-user",
-        id: 12345678,
-        avatar_url: "https://avatars.githubusercontent.com/u/9919", // Octocat
-        html_url: "https://github.com/demo-user",
-        name: "Demo User",
-        bio: "👋 This is a demo/mock profile for development mode (no real GitHub data!).",
-        repos_url: "https://api.github.com/users/demo-user/repos",
-        followers_url: "https://api.github.com/users/demo-user/followers"
+      const mockUser = {
+        login: "mock-demo-user",
+        id: 42424242,
+        avatar_url: "https://avatars.githubusercontent.com/u/583231", // classic Octocat
+        html_url: "https://github.com/mock-demo-user",
+        name: "Demo User (Mock)",
+        bio: "🙌 Welcome! This dashboard is in DEMO/MOCK MODE. These are illustrative sample values, not real GitHub data.",
+        repos_url: "https://api.github.com/users/mock-demo-user/repos",
+        followers_url: "https://api.github.com/users/mock-demo-user/followers"
       };
-      const demoRepos = [
+      const mockRepos = [
         {
-          id: 1001,
-          name: "mock-repo-1",
-          html_url: "https://github.com/demo-user/mock-repo-1",
-          description: "A cool demo project.",
+          id: 401,
+          name: "mock-github-dashboard",
+          html_url: "https://github.com/mock-demo-user/mock-github-dashboard",
+          description: "Sample dashboard project (for demo purposes).",
           language: "JavaScript",
-          stargazers_count: 42
+          stargazers_count: 88
         },
         {
-          id: 1002,
-          name: "demo-portfolio",
-          html_url: "https://github.com/demo-user/demo-portfolio",
-          description: "Portfolio website – for showcase only",
+          id: 402,
+          name: "hello-world",
+          html_url: "https://github.com/mock-demo-user/hello-world",
+          description: "Hello world example repository.",
+          language: "Markdown",
+          stargazers_count: 1
+        },
+        {
+          id: 403,
+          name: "css-tricks",
+          html_url: "https://github.com/mock-demo-user/css-tricks",
+          description: "CSS tricks and snippets.",
           language: "CSS",
-          stargazers_count: 10
+          stargazers_count: 12
         }
       ];
-      const demoFollowers = [
+      const mockFollowers = [
         {
-          login: "mockfriend1",
-          id: 10099,
-          avatar_url: "https://avatars.githubusercontent.com/u/583231", // Octocat alt
-          html_url: "https://github.com/mockfriend1"
+          login: "alice-demo",
+          id: 9101,
+          avatar_url: "https://avatars.githubusercontent.com/u/94817",
+          html_url: "https://github.com/alice-demo"
         },
         {
-          login: "test-pal",
-          id: 10100,
-          avatar_url: "https://avatars.githubusercontent.com/u/8888",
-          html_url: "https://github.com/test-pal"
+          login: "bob-example",
+          id: 1337,
+          avatar_url: "https://avatars.githubusercontent.com/u/39657",
+          html_url: "https://github.com/bob-example"
         }
       ];
-      setUser(demoUser);
-      setRepos(demoRepos);
-      setFollowers(demoFollowers);
+      setUser(mockUser);
+      setRepos(mockRepos);
+      setFollowers(mockFollowers);
       setFetchError(""); // clear any prior errors
-      window.localStorage.setItem("gh_user", JSON.stringify(demoUser));
+      window.localStorage.setItem("gh_user", JSON.stringify(mockUser));
       return;
     }
 
