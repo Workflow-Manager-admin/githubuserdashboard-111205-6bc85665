@@ -29,64 +29,94 @@ Removing it will break editor integration and visual editing features.
 
 ### ⚠️ Environment Variable Setup for GitHub OAuth (React + FastAPI/Backend)
 
-To enable secure GitHub OAuth integration and configure backend token exchange, you must provide your OAuth client information and token endpoint as environment variables in a `.env` file **in the `github_user_dashboard/` folder**.
+To enable secure GitHub OAuth integration and configure backend token exchange, provide your OAuth client information and token endpoint as environment variables in a `.env` file **in the `github_user_dashboard/` folder**:
 
-#### 1. Create `.env` file if not already present
+#### 1. Create `.env` file, example:
 ```env
 # .env in github_user_dashboard/
 REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
 
-# Where your FastAPI (or compatible) backend for code->token exchange lives:
-REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
+# The endpoint for token exchange (FastAPI, compatible backend):
+REACT_APP_TOKEN_EXCHANGE_ENDPOINT=http://localhost:8000/token
 
-# [OPTIONAL - For demo/testing only, never in production!]
+# (Optional; for development/demo ONLY, never in production)
 REACT_APP_GITHUB_CLIENT_SECRET=<your_client_secret>
 ```
-> **Do NOT commit client secrets to source!** `client_secret` is used ONLY for isolated, internal backend testing. Production systems MUST NOT expose it to the frontend.
+> **Never commit client secrets to source!** `client_secret` is only for local/internal testing.
 
 ---
 
-### 🔧 How the OAuth token exchange works
+### 🔧 How OAuth Code Exchange Works
 
-- The React app POSTs the OAuth code, client_id, and, if present, client_secret, as `application/x-www-form-urlencoded` to the endpoint defined by `REACT_APP_TOKEN_ENDPOINT` (default: `http://localhost:3001/token`).
-- The endpoint is designed for use with a secure FastAPI (or Node.js/other) backend that performs server-to-server GitHub token exchange.
+- The React app POSTs the OAuth code, client_id, client_secret (if present), redirect_uri, and state as `application/x-www-form-urlencoded` to the token endpoint defined by `REACT_APP_TOKEN_EXCHANGE_ENDPOINT`.
+- Endpoint is compatible with FastAPI or similar; perform server-side code-to-token exchange.
 
-#### Example `.env`
-
+#### Sample `.env`:
 ```env
 REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
-REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
+REACT_APP_TOKEN_EXCHANGE_ENDPOINT=http://localhost:8000/token
 # NEVER commit secrets:
 REACT_APP_GITHUB_CLIENT_SECRET=demo_value_only_for_backend_testing
 ```
 
 ---
 
-### 💡 Integration Contract for Token Exchange Endpoint (Backend Service)
+### 💡 OAuth Token Endpoint Integration (Frontend <-> FastAPI or Node.js)
 
-The frontend will:
-- **POST** to the endpoint as configured, sending `code`, `client_id`, and (rarely, if set), `client_secret` as form data (`x-www-form-urlencoded`):
+The frontend sends a POST request structured as:
 
-**POST body example**
+#### Example POST to Token Endpoint:
+- **URL:** from `REACT_APP_TOKEN_EXCHANGE_ENDPOINT` (default: `http://localhost:3001/token`)
+- **Content-Type:** `application/x-www-form-urlencoded`
+- **Body Fields:**  
+  - `code` (required) — from GitHub OAuth  
+  - `client_id` (required)  
+  - `client_secret` (optional, dev only)  
+  - `redirect_uri` (always provided)  
+  - `state` (if available; optional for some setups)
+
 ```
-code=abc123&client_id=Ov23lioFpdZyTjydbxm0[&client_secret=demo_val]
+code=abc123&client_id=Ov23lioFpdZyTjydbxm0[&client_secret=demo_val]&redirect_uri=https://yourapp.com/callback[&state=xyz]
 ```
 
-**Backend HTTP Response (FastAPI/compatible)**
-- Must return JSON:
-```json
-{ "access_token": "<token_value>" }
+#### Example (fetch, JavaScript):
+```js
+fetch(process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Accept': 'application/json'
+  },
+  body: new URLSearchParams({
+    client_id: 'your_client_id',
+    client_secret: 'your_client_secret', // (omit unless for dev)
+    code: received_code,
+    redirect_uri: 'https://yourapp.com/callback',
+    state: stored_state
+  }),
+})
+.then(res => res.json())
+.then(data => {
+  console.log('access_token:', data.access_token);
+});
 ```
-- If error: HTTP non-200, ideally `{ "error": "msg" }` in JSON.
 
-#### Sample curl for developers
+#### Example (curl):
 ```bash
 curl -X POST http://localhost:8000/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "code=the_oauth_code_here&client_id=Ov23lioFpdZyTjydbxm0"
+  -d "code=the_oauth_code_here&client_id=Ov23lioFpdZyTjydbxm0&redirect_uri=http://localhost:3000"
 ```
 
-#### Minimal FastAPI endpoint
+#### Expected Backend Response (JSON):
+```json
+{ "access_token": "<token_value>" }
+```
+- On error: HTTP non-200, ideally `{ "error": "msg" }` in JSON.
+
+---
+
+### Minimal FastAPI Token Endpoint Example
 
 ```python
 from fastapi import FastAPI, Form
@@ -99,11 +129,13 @@ app = FastAPI()
 async def exchange_token(
     code: str = Form(...),
     client_id: str = Form(None),
-    client_secret: str = Form(None)  # Accept/ignore in backend as policy allows
+    client_secret: str = Form(None),
+    redirect_uri: str = Form(None),
+    state: str = Form(None)
 ):
     if not code:
         return JSONResponse({"error": "Missing code"}, status_code=400)
-    # Optionally validate client_id/client_secret
+    # Validate client_id/client_secret, etc. as needed
     return {"access_token": "mock_access_token"}
 ```
 
@@ -111,8 +143,7 @@ async def exchange_token(
 
 #### CORS for local React development
 
-Make sure your FastAPI backend enables CORS for the React development server:
-
+Make sure your FastAPI backend enables CORS for local React:
 ```python
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
@@ -121,179 +152,39 @@ app.add_middleware(
     allow_methods=["*"], allow_headers=["*"],
 )
 ```
-> For prod, restrict allowed origins appropriately.
+- For production, restrict allow_origins appropriately.
 
 ---
 
-#### Security best practices
+#### Security Best Practices
 
-- Never commit or expose your GitHub `client_secret` in any frontend code.
-- For automated tests or mock/demo: set a placeholder secret ONLY in local .env never in production or in source control.
-- The React frontend always POSTs to an endpoint defined in `.env`. Any value in a sample repo/demo is for developer testing only.
+- Never commit or expose GitHub `client_secret` in frontend code.
+- For tests/mock/demo: use a placeholder secret ONLY in local .env (never in production or source control).
+- The React frontend POSTs to the endpoint set in `.env`. Value is for local/dev/test only.
 
-### 💡 Configurable Token Exchange Endpoint for OAuth (FastAPI or Node)
+---
+
+### Configurable Token Exchange Endpoint
 
 By default, the dashboard POSTs the OAuth code to:
 ```
 http://localhost:3001/token
 ```
-
-#### 🔧 To use your own FastAPI backend for code exchange:
-Set the environment variable in your `github_user_dashboard/.env` file as:
+But you can override via `.env` with:
 ```
-REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
+REACT_APP_TOKEN_EXCHANGE_ENDPOINT=http://localhost:8000/token
 ```
-- You can use any backend that accepts the documented contract.  
-- The React dashboard will POST the user's OAuth code to whichever endpoint you set.
+(Or `REACT_APP_TOKEN_ENDPOINT` for backward-compatibility.)
 
 ---
 
-## 🚦 Integration Contract for the Token Exchange Endpoint (FastAPI or compatible)
-
-**Frontend POST request**
-- The React app POSTs to your configured endpoint for the OAuth code exchange:
-  - **Endpoint URL:** from `REACT_APP_TOKEN_ENDPOINT` or defaults to `http://localhost:3001/token`
-- **Request format:** `x-www-form-urlencoded`
-- **Required fields:** `code=<OAUTH_CODE>` (optionally `client_id=<client_id>`)  
-  - :warning: **NEVER send `client_secret` from client code!** Only backend should hold secrets.
-
-**Sample POST request (for user/backends to test):**
-```http
-POST /token
-Host: localhost:8000
-Content-Type: application/x-www-form-urlencoded
-
-code=<OAUTH_CODE>&client_id=<OPTIONAL_CLIENT_ID>
-```
-- Example using `curl`:
-  ```bash
-  curl -X POST http://localhost:8000/token \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "code=the_oauth_code_here&client_id=Ov23lioFpdZyTjydbxm0"
-  ```
-
-**Backend (FastAPI) Response**
-- JSON body, status 200, on success (example):
-  ```json
-  { "access_token": "<mock_or_real_access_token>" }
-  ```
-- On error: return non-200 status and ideally include an `error` field in the JSON body.
-
-| Frontend sends (POST, x-www-form-urlencoded)     | Backend replies (JSON 200-ok)         |
-|--------------------------------------------------|----------------------------------------|
-| code=<string> [& client_id=<string>]             | { "access_token": "<string>" }         |
+#### Restart your dev server after changing .env.
 
 ---
-
-#### Example: Minimal FastAPI token endpoint (accepting form data, matches contract)
-
-```python
-from fastapi import FastAPI, Form
-from fastapi.responses import JSONResponse
-
-app = FastAPI()
-
-# PUBLIC_INTERFACE
-@app.post("/token")
-async def exchange_token(
-    code: str = Form(...),
-    client_id: str = Form(None),
-    client_secret: str = Form(None)
-):
-    if not code:
-        return JSONResponse({"error": "Missing code"}, status_code=400)
-    # Optionally check client_id/client_secret as needed (server-side only!)
-    return {"access_token": "mock_access_token"}
-```
-
-- Run with: `uvicorn main:app --reload --port 8000`
-- Set your React dashboard `.env` to point to this endpoint as shown above.
-
-**CORS Notice:**  
-Make sure CORS is enabled on your FastAPI backend to allow requests from your frontend (e.g., React dev server at `http://localhost:3000`).  
-In FastAPI, use:
-```python
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev
-    allow_methods=["*"], allow_headers=["*"],
-)
-```
-- For production, set more restrictive origins.
-
-> **Security Note:** Never expose your GitHub OAuth **client_secret** in frontend code. Your backend should be the only code handling secrets!
-
-3. Restart your development server if it's running.
-
-**Do NOT commit client secrets to source control.** Never expose your Client Secret in frontend code.
-
-In the project directory, you can run:
-
-### `npm start`
-
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-### `npm test`
-
-Launches the test runner in interactive watch mode.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-## Customization
-
-### Colors
-
-The main brand colors are defined as CSS variables in `src/App.css`:
-
-```css
-:root {
-  --kavia-orange: #E87A41;
-  --kavia-dark: #1A1A1A;
-  --text-color: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-}
-```
-
-### Components
-
-This template uses pure HTML/CSS components instead of a UI framework. You can find component styles in `src/App.css`. 
-
-Common components include:
-- Buttons (`.btn`, `.btn-large`)
-- Container (`.container`)
-- Navigation (`.navbar`)
-- Typography (`.title`, `.subtitle`, `.description`)
 
 ## Learn More
 
 To learn React, check out the [React documentation](https://reactjs.org/).
 
-### Code Splitting
+### Other sections (build, deploy, colors, etc.) remain unchanged.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

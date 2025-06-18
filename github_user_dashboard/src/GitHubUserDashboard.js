@@ -123,47 +123,49 @@ export default function GitHubUserDashboard() {
 
     // PUBLIC_INTERFACE
     /** 
-     * Exchanges the provided OAuth code for an access_token at the configured backend endpoint.
-     * POSTs x-www-form-urlencoded ({ code, client_id, client_secret }) as per backend contract (FastAPI, etc).
-     * Reads access_token from the returned JSON; expects { "access_token": ... } in response.
-     * The endpoint defaults to http://localhost:3001/token but can be configured via .env (.env: REACT_APP_TOKEN_ENDPOINT).
-     *
-     * SECURITY: client_secret must only be handled server-side, not in frontend. Only send code and client_id from client.
-     * 
-     * @param {string} authCode
-     * @returns {Promise<{ access_token: string }>} Access token on success
-     */
-    /**
      * PUBLIC_INTERFACE
-     * Exchanges the OAuth code for an access token by posting code, client_id, and (if set) client_secret as x-www-form-urlencoded
-     * to the configured FastAPI (or compatible) backend endpoint specified in the environment variable.
+     * Exchanges the OAuth code for an access token by posting code, client_id, client_secret, redirect_uri, and state
+     * (as required) as x-www-form-urlencoded to the configured FastAPI (or compatible) backend endpoint.
+     * Endpoint is settable via REACT_APP_TOKEN_EXCHANGE_ENDPOINT or REACT_APP_TOKEN_ENDPOINT in .env/config.
      * Reads access_token from JSON response per documented contract.
      * 
      * @param {string} authCode - The authorization code received from GitHub OAuth redirect.
      * @returns {Promise<{ access_token: string }>} The JSON object containing the access token.
      */
     async function exchangeCodeForToken(authCode) {
-      const backendUrl = getTokenEndpointUrl();
+      const backendUrl = (
+        (typeof process !== "undefined" && process.env && process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT)
+        ? process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT
+        : getTokenEndpointUrl()
+      );
+      // Standard required POST body fields
+      const form = new URLSearchParams();
+      form.append("code", authCode);
+      if (GITHUB_CLIENT_ID) form.append("client_id", GITHUB_CLIENT_ID);
 
-      // Build the form body for x-www-form-urlencoded as required by FastAPI contract
-      const formParams = [];
-      formParams.push("code=" + encodeURIComponent(authCode));
-      if (GITHUB_CLIENT_ID) formParams.push("client_id=" + encodeURIComponent(GITHUB_CLIENT_ID));
-      // ONLY include client_secret if provided via env for test/dev lab (never commit to source, never expose to prod)
+      // Optionally provide client_secret (test/dev only; never commit value)
       if (
         typeof process !== "undefined" &&
         process.env &&
         process.env.REACT_APP_GITHUB_CLIENT_SECRET
       ) {
-        formParams.push("client_secret=" + encodeURIComponent(process.env.REACT_APP_GITHUB_CLIENT_SECRET));
+        form.append("client_secret", process.env.REACT_APP_GITHUB_CLIENT_SECRET);
       }
-      const body = formParams.join("&");
+
+      // Always provide redirect_uri (OAuth contract)
+      if (REDIRECT_URI) form.append("redirect_uri", REDIRECT_URI);
+      // State parameter if present in session/history (optional)
+      const state = window.localStorage.getItem("gh_oauth_state");
+      if (state) form.append("state", state);
 
       try {
         const resp = await fetch(backendUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body,
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json"
+          },
+          body: form.toString(),
         });
         if (!resp.ok) {
           let err = null;

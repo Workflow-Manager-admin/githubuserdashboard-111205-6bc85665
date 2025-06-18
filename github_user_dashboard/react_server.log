@@ -7,13 +7,13 @@
 <i> [webpack-dev-server] On Your Network (IPv4): http://172.17.0.2:3000/
 <i> [webpack-dev-server] Content not from webpack is served from './public' directory
 Injecting EditorRootWrapper import: ../.ve/EditorRootWrapper
-asset bundle.js 1.42 MiB [emitted] (name: main)
+asset bundle.js 1.43 MiB [emitted] (name: main)
 asset index.html 1.98 KiB [emitted]
 runtime modules 27.5 KiB 14 modules
 modules by path ./node_modules/ 1.24 MiB 31 modules
-modules by path ./src/ 37.7 KiB
+modules by path ./src/ 38.4 KiB
   modules by path ./src/*.css 7.49 KiB 4 modules
-  modules by path ./src/*.js 30.2 KiB
+  modules by path ./src/*.js 30.9 KiB
     ./src/index.js 530 bytes [built] [code generated]
     + 2 modules
 modules by path ./.ve/ 15.1 KiB
@@ -24,14 +24,14 @@ modules by path ./.ve/ 15.1 KiB
     ./.ve/EditorOverlay.css 2.25 KiB [built] [code generated]
     ./node_modules/css-loader/dist/cjs.js!./.ve/EditorOverlay.css 697 bytes [built] [code generated]
   ./.ve/EditorOverlay.jsx 1.58 KiB [built] [code generated]
-webpack 5.99.9 compiled successfully in 1316 ms
+webpack 5.99.9 compiled successfully in 1413 ms
 assets by status 1.98 KiB [cached] 1 asset
 assets by path *.js 1.46 MiB
-  asset bundle.js 1.43 MiB [emitted] (name: main)
-  asset main.cb3571b39db32bfec0c2.hot-update.js 37.1 KiB [emitted] [immutable] [hmr] (name: main)
-asset main.cb3571b39db32bfec0c2.hot-update.json 28 bytes [emitted] [immutable] [hmr]
-Entrypoint main 1.46 MiB = bundle.js 1.43 MiB main.cb3571b39db32bfec0c2.hot-update.js 37.1 KiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.875d46f16a6e71b0ac1f.hot-update.js 36.9 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.875d46f16a6e71b0ac1f.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.46 MiB = bundle.js 1.42 MiB main.875d46f16a6e71b0ac1f.hot-update.js 36.9 KiB
 cached modules 1.26 MiB [cached] 42 modules
 runtime modules 27.5 KiB 14 modules
-./src/GitHubUserDashboard.js 29.7 KiB [built] [code generated]
-webpack 5.99.9 compiled successfully in 97 ms
+./src/GitHubUserDashboard.js 29.5 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 207 ms
