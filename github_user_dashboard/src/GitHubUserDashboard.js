@@ -145,21 +145,21 @@ export default function GitHubUserDashboard() {
     async function exchangeCodeForToken(authCode) {
       /*
         Exchanges OAuth code for access_token:
-        - POST to backend endpoint (from .env) as application/x-www-form-urlencoded
-        - Always sends: code, client_id, redirect_uri
-        - Optionally: client_secret from env (for local/dev only, never in real prod), state if present
-        - Expects: JSON { access_token: ... } (per FastAPI spec), error handling if no/invalid token
-        - See README for backend CORS requirements (allow http://localhost:3000, restrict in prod)
+        - POST to backend endpoint (from .env/config) as application/x-www-form-urlencoded
+        - Uses new URLSearchParams({code, client_id, client_secret, redirect_uri, state})
+        - Endpoint URL is read from .env or config (.env preferred)
+        - FastAPI-style JSON response: expects { "access_token": ... }
+        - Headers: Content-Type: application/x-www-form-urlencoded, Accept: application/json
       */
       const backendUrl = getTokenEndpointUrl();
 
-      // Required payload
+      // Required fields for payload
       const payload = {
         code: authCode,
         client_id: GITHUB_CLIENT_ID,
         redirect_uri: REDIRECT_URI
       };
-      // Optionally include client_secret for demos/dev (never browser prod)
+      // Optionally include client_secret if defined for local/dev only
       if (
         typeof process !== "undefined" &&
         process.env &&
@@ -167,11 +167,11 @@ export default function GitHubUserDashboard() {
       ) {
         payload.client_secret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
       }
-      // Include state if set by OAuth flow
+      // Include state if present (e.g., anti-CSRF)
       const oauthState = window.localStorage.getItem("gh_oauth_state");
       if (oauthState) payload.state = oauthState;
 
-      // x-www-form-urlencoded body (URLSearchParams)
+      // Build the x-www-form-urlencoded body using URLSearchParams as per requirements
       const requestBody = new URLSearchParams(payload).toString();
 
       try {
@@ -184,15 +184,16 @@ export default function GitHubUserDashboard() {
           body: requestBody,
         });
         if (!response.ok) {
+          // Attempt to parse error JSON if possible for FastAPI-style {error: ...}
           let errJson = null;
           try { errJson = await response.json(); } catch (_) {}
           throw new Error(
-            (errJson && errJson.error) ?
-            errJson.error :
-            `Token exchange failed (HTTP ${response.status}): ${response.statusText}`
+            errJson && errJson.error
+              ? errJson.error
+              : `Token exchange failed (HTTP ${response.status}): ${response.statusText}`
           );
         }
-        // FastAPI: expect JSON { access_token }
+        // Expect FastAPI-style { access_token: ... }
         const data = await response.json();
         if (!data || typeof data.access_token !== "string" || !data.access_token) {
           throw new Error("Token endpoint did not provide access_token");
