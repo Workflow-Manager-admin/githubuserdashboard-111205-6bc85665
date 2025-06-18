@@ -24,4 +24,34 @@ modules by path ./.ve/ 15.1 KiB
     ./.ve/EditorOverlay.css 2.25 KiB [built] [code generated]
     ./node_modules/css-loader/dist/cjs.js!./.ve/EditorOverlay.css 697 bytes [built] [code generated]
   ./.ve/EditorOverlay.jsx 1.58 KiB [built] [code generated]
-webpack 5.99.9 compiled successfully in 1327 ms
+webpack 5.99.9 compiled successfully in 1289 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.505e052d107d8df80a76.hot-update.js 33.4 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.505e052d107d8df80a76.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.505e052d107d8df80a76.hot-update.js 33.4 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 26.6 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 99 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.18cf154eb21f64abde6a.hot-update.js 30.1 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.18cf154eb21f64abde6a.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.18cf154eb21f64abde6a.hot-update.js 30.1 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 23.5 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 144 ms
+assets by status 1.98 KiB [cached] 1 asset
+assets by path *.js 1.45 MiB
+  asset bundle.js 1.42 MiB [emitted] (name: main)
+  asset main.168026d9cb0c42535425.hot-update.js 30.3 KiB [emitted] [immutable] [hmr] (name: main)
+asset main.168026d9cb0c42535425.hot-update.json 28 bytes [emitted] [immutable] [hmr]
+Entrypoint main 1.45 MiB = bundle.js 1.42 MiB main.168026d9cb0c42535425.hot-update.js 30.3 KiB
+cached modules 1.26 MiB [cached] 42 modules
+runtime modules 27.5 KiB 14 modules
+./src/GitHubUserDashboard.js 23.7 KiB [built] [code generated]
+webpack 5.99.9 compiled successfully in 92 ms

@@ -121,31 +121,36 @@ export default function GitHubUserDashboard() {
     const code = params.get("code");
 
     // Mock the backend OAuth code exchange: If code is present (redirected from GitHub), simulate backend API for access_token
-    async function mockExchangeCodeForToken(authCode) {
-      // Simulate async backend call delay for a more realistic effect
-      // You could replace this with: await fetch('/mock-backend/token', {...}) if you want a custom endpoint
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          // "Fake" access_token payload
-          resolve({
-            access_token: "mock_github_token_123456789",
-            token_type: "bearer",
-            scope: "read:user repo"
-          });
-        }, 750); // 750ms delay
-      });
+    // Exchanges the OAuth code for access_token via the mock backend
+    async function exchangeCodeForTokenViaBackend(authCode) {
+      try {
+        const resp = await fetch("http://localhost:4000/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ code: authCode })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err && err.error ? err.error : "Token exchange failed");
+        }
+        return await resp.json();
+      } catch (err) {
+        throw err;
+      }
     }
 
     async function handleOAuthFlow() {
       if (code && !accessToken) {
         setFetchError(""); // Remove any old error
         try {
-          // Simulates a backend call that exchanges code for token
-          const response = await mockExchangeCodeForToken(code);
+          // Calls mock-backend to exchange code for token
+          const response = await exchangeCodeForTokenViaBackend(code);
           setAccessToken(response.access_token);
           window.localStorage.setItem("gh_access_token", response.access_token);
         } catch (e) {
-          setFetchError("Mocked backend token exchange failed.");
+          setFetchError(`Failed to exchange OAuth code: ${e.message}`);
         }
         // Remove code from URL for cleanliness (single-page-app)
         params.delete("code");
@@ -167,106 +172,16 @@ export default function GitHubUserDashboard() {
   useEffect(() => {
     if (!accessToken) return;
 
-    /**
-     * DEV_MODE: Forces frontend demo mode (simulate all API responses, never call real GitHub).
-     * Set to true to always stub, or use the mock token heuristic (default).
-     * This can be exposed as an environment variable or override in future.
-     */
-    const DEV_MODE = false;
-
-    // Returns true if the dashboard should use all fake/mock data
-    const isMockMode = (token) =>
-      DEV_MODE ||
-      (typeof token === "string" && token.startsWith("mock_") && token.length < 50); // crude heuristic for "obviously fake" tokens
-
     // PUBLIC_INTERFACE
     async function getUserData() {
       try {
         setFetchError("");
-
-        // Provide fully stubbed GitHub user and related info for dev/demo
-        if (isMockMode(accessToken)) {
-          // -- MOCKED GITHUB USER OBJECT --
-          const fakeUser = {
-            login: "mockuser",
-            name: "Mock Developer",
-            bio: "👋 This is a <b>mock GitHub user</b> (frontend demo mode). All data here is fake!",
-            avatar_url: "https://avatars.githubusercontent.com/u/583231?v=4", // Octocat
-            html_url: "https://github.com/mockuser",
-            company: "KAVIA",
-            blog: "https://kavia.ai/",
-            location: "Internet",
-            public_repos: 2,
-            public_gists: 1,
-            followers: 2,
-            following: 0,
-            created_at: "2012-04-23T18:25:43Z",
-            updated_at: "2023-06-02T12:19:31Z",
-            repos_url: "https://api.github.com/users/mockuser/repos",
-            followers_url: "https://api.github.com/users/mockuser/followers",
-            email: "mockuser@kavia.ai",
-          };
-          setUser(fakeUser);
-          window.localStorage.setItem("gh_user", JSON.stringify(fakeUser));
-
-          // -- MOCKED REPOSITORIES --
-          const fakeRepos = [
-            {
-              id: 1,
-              name: "mock-repo-one",
-              html_url: "https://github.com/mockuser/mock-repo-one",
-              description: "Fake repository number one (for demo).",
-              language: "JavaScript",
-              stargazers_count: 42,
-              forks_count: 10,
-              open_issues_count: 1,
-              private: false,
-              created_at: "2023-01-11T15:23:40Z",
-              updated_at: "2023-06-02T12:33:22Z",
-            },
-            {
-              id: 2,
-              name: "mock-repo-two",
-              html_url: "https://github.com/mockuser/mock-repo-two",
-              description: "Another fake repository for demonstration.",
-              language: "Python",
-              stargazers_count: 99,
-              forks_count: 4,
-              open_issues_count: 0,
-              private: false,
-              created_at: "2023-02-01T18:01:00Z",
-              updated_at: "2023-06-01T08:54:10Z",
-            },
-          ];
-          setRepos(fakeRepos);
-
-          // -- MOCKED FOLLOWERS --
-          const fakeFollowers = [
-            {
-              id: 201,
-              login: "follower1",
-              avatar_url: "https://avatars.githubusercontent.com/u/9919?v=4",
-              html_url: "https://github.com/follower1"
-            },
-            {
-              id: 202,
-              login: "follower2",
-              avatar_url: "https://avatars.githubusercontent.com/u/10137?v=4",
-              html_url: "https://github.com/follower2"
-            }
-          ];
-          setFollowers(fakeFollowers);
-
-          // Optionally add more demo mock behaviors here (scoped to "mock mode")
-          return;
-        }
-
-        // --- REAL API CALLS IF NOT MOCKED ---
+        // --- REAL API CALLS ONLY, use accessToken received from backend ---
         // Fetch user profile
         const resUser = await fetch("https://api.github.com/user", {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
-        if (!resUser.ok) throw new Error("Failed to fetch user profile");
+        if (!resUser.ok) throw new Error("Failed to fetch user profile. (Check if token is accepted by GitHub API)");
         const userJson = await resUser.json();
         setUser(userJson);
         window.localStorage.setItem("gh_user", JSON.stringify(userJson));
@@ -304,11 +219,10 @@ export default function GitHubUserDashboard() {
           <button className="btn btn-large" style={{ background: "#0366d6", color: "#fff", marginTop: 20 }} onClick={loginWithGitHub}>
             Sign in with GitHub
           </button>
-          {/* Show fetch error only if not related to OAuth flow, since it's now mocked */}
           <div style={{ color: "#e36209", marginTop: 16 }}>{fetchError ? fetchError : null}</div>
           <div style={{ color: "#767676", marginTop: 24, fontSize: "0.87em" }}>
-            <b>Note:</b> This is a frontend-only demo. OAuth code exchange with GitHub is <b>mocked</b> for development.<br/>
-            You can test the dashboard flow without a real backend.
+            <b>Note:</b> OAuth code exchange is now handled by the <b>mock backend</b> at <code>http://localhost:4000/token</code>.<br/>
+            No frontend-only stubbing or demo user data remains. The returned access_token will be used for GitHub API calls.
           </div>
         </div>
       );
