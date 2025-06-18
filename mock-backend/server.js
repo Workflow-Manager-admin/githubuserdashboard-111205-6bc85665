@@ -4,29 +4,24 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3888;
 
-// Middleware for JSON body parsing and CORS (for local dev)
+// Middleware for JSON body parsing and CORS
 app.use(express.json());
 app.use(cors());
 
 // PUBLIC_INTERFACE
-// Endpoint: Accepts POST with { code: string }, responds with { access_token: 'mock_access_token' }
-app.post('/oauth/token', (req, res) => {
-  // Usually: req.body.code is sent from frontend
+// POST /token endpoint: accepts { code: ... } and responds with mock token
+app.post('/token', (req, res) => {
   const { code } = req.body;
   if (!code) {
     return res.status(400).json({ error: 'Missing OAuth code' });
   }
-  // Simulate OAuth code exchange (always succeed, return a mock token)
-  return res.json({
-    access_token: 'mock_access_token',
-    token_type: 'bearer',
-    scope: 'read:user repo'
-  });
+  // Simulate token (real server would verify code, etc)
+  return res.json({ access_token: 'mock_access_token' });
 });
 
-// Health check (optional, for debug)
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+// (Optional) Health check for debug
+app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
 app.listen(PORT, () => {
-  console.log(`[MOCK-BACKEND] OAuth code exchange server running at http://localhost:${PORT}`);
+  console.log(`[MOCK-BACKEND] Listening at http://localhost:${PORT}/token`);
 });
