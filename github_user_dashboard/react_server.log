@@ -35,3 +35,4 @@ cached modules 1.26 MiB [cached] 42 modules
 runtime modules 27.5 KiB 14 modules
 ./src/GitHubUserDashboard.js 30.1 KiB [built] [code generated]
 webpack 5.99.9 compiled successfully in 242 ms
+<i> [webpack-dev-server] Gracefully shutting down. To force exit, press ^C again. Please wait...
