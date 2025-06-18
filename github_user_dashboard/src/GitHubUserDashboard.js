@@ -167,50 +167,80 @@ export default function GitHubUserDashboard() {
   useEffect(() => {
     if (!accessToken) return;
 
-    // Helper to detect if we're in a mocked frontend/dev-only mode
-    const isMockToken = (token) => typeof token === "string" && token.startsWith("mock_");
+    /**
+     * DEV_MODE: Forces frontend demo mode (simulate all API responses, never call real GitHub).
+     * Set to true to always stub, or use the mock token heuristic (default).
+     * This can be exposed as an environment variable or override in future.
+     */
+    const DEV_MODE = false;
 
+    // Returns true if the dashboard should use all fake/mock data
+    const isMockMode = (token) =>
+      DEV_MODE ||
+      (typeof token === "string" && token.startsWith("mock_") && token.length < 50); // crude heuristic for "obviously fake" tokens
+
+    // PUBLIC_INTERFACE
     async function getUserData() {
       try {
         setFetchError("");
 
-        // If using a mocked access token, provide fake/mock data instead of real API calls
-        if (isMockToken(accessToken)) {
-          // Mock GitHub user profile
+        // Provide fully stubbed GitHub user and related info for dev/demo
+        if (isMockMode(accessToken)) {
+          // -- MOCKED GITHUB USER OBJECT --
           const fakeUser = {
             login: "mockuser",
-            name: "Mock User",
-            bio: "This is a mock GitHub user profile for frontend development mode.",
-            avatar_url: "https://avatars.githubusercontent.com/u/583231?v=4", // use Octocat
+            name: "Mock Developer",
+            bio: "👋 This is a <b>mock GitHub user</b> (frontend demo mode). All data here is fake!",
+            avatar_url: "https://avatars.githubusercontent.com/u/583231?v=4", // Octocat
             html_url: "https://github.com/mockuser",
+            company: "KAVIA",
+            blog: "https://kavia.ai/",
+            location: "Internet",
+            public_repos: 2,
+            public_gists: 1,
+            followers: 2,
+            following: 0,
+            created_at: "2012-04-23T18:25:43Z",
+            updated_at: "2023-06-02T12:19:31Z",
             repos_url: "https://api.github.com/users/mockuser/repos",
             followers_url: "https://api.github.com/users/mockuser/followers",
+            email: "mockuser@kavia.ai",
           };
           setUser(fakeUser);
           window.localStorage.setItem("gh_user", JSON.stringify(fakeUser));
 
-          // Mock repositories
+          // -- MOCKED REPOSITORIES --
           const fakeRepos = [
             {
               id: 1,
               name: "mock-repo-one",
               html_url: "https://github.com/mockuser/mock-repo-one",
-              description: "Fake repository number one.",
+              description: "Fake repository number one (for demo).",
               language: "JavaScript",
-              stargazers_count: 42
+              stargazers_count: 42,
+              forks_count: 10,
+              open_issues_count: 1,
+              private: false,
+              created_at: "2023-01-11T15:23:40Z",
+              updated_at: "2023-06-02T12:33:22Z",
             },
             {
               id: 2,
               name: "mock-repo-two",
               html_url: "https://github.com/mockuser/mock-repo-two",
-              description: "Fake repository number two.",
+              description: "Another fake repository for demonstration.",
               language: "Python",
-              stargazers_count: 99
-            }
+              stargazers_count: 99,
+              forks_count: 4,
+              open_issues_count: 0,
+              private: false,
+              created_at: "2023-02-01T18:01:00Z",
+              updated_at: "2023-06-01T08:54:10Z",
+            },
           ];
           setRepos(fakeRepos);
 
-          // Mock followers
+          // -- MOCKED FOLLOWERS --
           const fakeFollowers = [
             {
               id: 201,
@@ -226,6 +256,8 @@ export default function GitHubUserDashboard() {
             }
           ];
           setFollowers(fakeFollowers);
+
+          // Optionally add more demo mock behaviors here (scoped to "mock mode")
           return;
         }
 
