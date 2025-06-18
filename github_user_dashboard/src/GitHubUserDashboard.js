@@ -51,34 +51,22 @@ export default function GitHubUserDashboard() {
   const [accessToken, setAccessToken] = useState(null); // Github OAuth access token
   const [page, setPage] = useState("dashboard"); // dashboard | repos | followers | login
 
-  // Example: store fetched user data
+  // Example: store fetched user data (removed all frontend/dev-mode mocking logic)
   const [repos, setRepos] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [fetchError, setFetchError] = useState("");
 
-  // --- GitHub OAuth Integration ---
-  /**
-   * Environment Variable Guidance (toolchain support):
-   * - If using Create React App (CRA) or Vite: use REACT_APP_GITHUB_CLIENT_ID in .env, e.g.
-   *     REACT_APP_GITHUB_CLIENT_ID=your_client_id_here
-   * - For custom webpack: ensure DefinePlugin is configured to inject env variables as needed.
-   * 
-   * This logic will warn if the Client ID is missing or not injected, and avoids assuming 'process' is always available.
-   */
+  // GitHub OAuth client settings
   let GITHUB_CLIENT_ID;
-  // Try CRA/Vite standard first
   if (typeof process !== "undefined" &&
       process.env &&
       (process.env.REACT_APP_GITHUB_CLIENT_ID || 'Ov23lioFpdZyTjydbxm0')) {
-    // CRA: REACT_APP_GITHUB_CLIENT_ID, Vite: VITE_GITHUB_CLIENT_ID
     GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID || 'Ov23lioFpdZyTjydbxm0';
   } else if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GITHUB_CLIENT_ID) {
-    // Vite through import.meta.env
     GITHUB_CLIENT_ID = 'Ov23lioFpdZyTjydbxm0';
   } else {
     GITHUB_CLIENT_ID = 'Ov23lioFpdZyTjydbxm0';
   }
-
   if (!GITHUB_CLIENT_ID) {
     if (typeof window !== "undefined" && window.console && window.console.warn) {
       window.console.warn(
@@ -88,24 +76,17 @@ export default function GitHubUserDashboard() {
       );
     }
   }
-
-  const REDIRECT_URI = window.location.origin; // Should match registered OAuth app
-  const scope = "read:user repo"; // Adjust as needed
+  const REDIRECT_URI = window.location.origin;
+  const scope = "read:user repo";
 
   // PUBLIC_INTERFACE
   function loginWithGitHub() {
-    /**
-     * Triggers GitHub OAuth flow (redirects user to GitHub login/consent)
-     * OAuth 2.0 Implicit Grant demonstration:
-     *   - For production, use Authorization Code with backend for security.
-     */
+    // Triggers GitHub OAuth flow using Authorization Code Grant
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scope)}&allow_signup=true`;
     window.location.href = githubAuthUrl;
   }
-
   // PUBLIC_INTERFACE
   function logout() {
-    /** Logs user out (clear localstorage/session for accessToken) */
     setUser(null);
     setAccessToken(null);
     setRepos([]);
@@ -114,25 +95,21 @@ export default function GitHubUserDashboard() {
     window.localStorage.removeItem("gh_user");
   }
 
-  // Extract OAuth token from URL if redirected
+  // Handle OAuth code in URL (exchange for access_token via backend only)
   useEffect(() => {
-    // If redirected back with ?code=... (for code grant; real apps exchange code at backend)
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-
-    // Mock the backend OAuth code exchange: If code is present (redirected from GitHub), simulate backend API for access_token
-    // Exchanges the OAuth code for access_token via the mock backend
-    async function exchangeCodeForTokenViaBackend(authCode) {
+    async function exchangeCodeForToken(authCode) {
+      // POST code to local mock backend, get { access_token }
       try {
         const resp = await fetch("http://localhost:4000/token", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ code: authCode })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: authCode }),
         });
         if (!resp.ok) {
-          const err = await resp.json();
+          let err = null;
+          try { err = await resp.json(); } catch (_) {}
           throw new Error(err && err.error ? err.error : "Token exchange failed");
         }
         return await resp.json();
@@ -140,23 +117,21 @@ export default function GitHubUserDashboard() {
         throw err;
       }
     }
-
     async function handleOAuthFlow() {
       if (code && !accessToken) {
-        setFetchError(""); // Remove any old error
+        setFetchError("");
         try {
-          // Calls mock-backend to exchange code for token
-          const response = await exchangeCodeForTokenViaBackend(code);
+          const response = await exchangeCodeForToken(code);
           setAccessToken(response.access_token);
           window.localStorage.setItem("gh_access_token", response.access_token);
         } catch (e) {
           setFetchError(`Failed to exchange OAuth code: ${e.message}`);
         }
-        // Remove code from URL for cleanliness (single-page-app)
+        // Remove code from URL bar
         params.delete("code");
         window.history.replaceState({}, "", window.location.pathname);
       }
-      // Optionally check localStorage for persisted session.
+      // Check localStorage for previous session
       const storedToken = window.localStorage.getItem("gh_access_token");
       const storedUser = window.localStorage.getItem("gh_user");
       if (storedToken && storedUser) {
@@ -164,20 +139,17 @@ export default function GitHubUserDashboard() {
         setUser(JSON.parse(storedUser));
       }
     }
-
     handleOAuthFlow();
   }, []);
 
-  // --- Fetch user data if authenticated ---
+  // Fetch user, repos, followers via GitHub API using real access_token (provided by backend)
   useEffect(() => {
     if (!accessToken) return;
-
     // PUBLIC_INTERFACE
     async function getUserData() {
       try {
         setFetchError("");
-        // --- REAL API CALLS ONLY, use accessToken received from backend ---
-        // Fetch user profile
+        // Only real API, no frontend stubbing allowed!
         const resUser = await fetch("https://api.github.com/user", {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
@@ -186,14 +158,12 @@ export default function GitHubUserDashboard() {
         setUser(userJson);
         window.localStorage.setItem("gh_user", JSON.stringify(userJson));
 
-        // Fetch repositories
         const resRepos = await fetch(userJson.repos_url, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
         if (!resRepos.ok) throw new Error("Failed to fetch user repositories");
         setRepos(await resRepos.json());
 
-        // Fetch followers
         const resFollowers = await fetch(userJson.followers_url, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
@@ -203,7 +173,6 @@ export default function GitHubUserDashboard() {
         setFetchError(err.message);
       }
     }
-
     getUserData();
   }, [accessToken]);
 
