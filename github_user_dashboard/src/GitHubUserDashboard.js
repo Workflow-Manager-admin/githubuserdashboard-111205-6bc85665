@@ -95,17 +95,39 @@ export default function GitHubUserDashboard() {
     window.localStorage.removeItem("gh_user");
   }
 
+  // --- Configurable Token Endpoint for OAuth Code Exchange ---
+  /**
+   * Determines the backend token exchange URL.
+   * Checks environment variable REACT_APP_TOKEN_ENDPOINT, otherwise defaults to a reasonable value.
+   * You can set this in your .env file or via process env in deployment.
+   */
+  function getTokenEndpointUrl() {
+    // 1. CRA env variable (recommended): REACT_APP_TOKEN_ENDPOINT, e.g., http://localhost:3001/token or FastAPI URL
+    if (typeof process !== "undefined" && process.env && process.env.REACT_APP_TOKEN_ENDPOINT) {
+      return process.env.REACT_APP_TOKEN_ENDPOINT;
+    }
+    // 2. Vite env support (for completeness)
+    if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_TOKEN_ENDPOINT) {
+      return import.meta.env.VITE_TOKEN_ENDPOINT;
+    }
+    // 3. Fallback: common dev, or cloud mock or FastAPI address as example
+    return "http://localhost:3001/token";
+  }
+
   // Handle OAuth code in URL (exchange for access_token via backend only)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
+
+    // PUBLIC_INTERFACE
+    /**
+     * Exchanges the provided auth code for an access_token at the configured backend endpoint.
+     * POSTs JSON { code } to the token endpoint and expects { access_token } back.
+     * Endpoint can be a FastAPI or Express server.
+     */
     async function exchangeCodeForToken(authCode) {
-      // POST code to local mock backend, get { access_token }
       try {
-        // Use correct backend endpoint for token exchange (mock backend on port 3001, not 4000)
-        // And support deployment on VSCode internal URL if available in the browser environment
-        // Always POST to the remote backend endpoint for /token
-        const backendUrl = "https://vscode-internal-5194-beta.beta01.cloud.kavia.ai:3001/token";
+        const backendUrl = getTokenEndpointUrl();
         const resp = await fetch(backendUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -121,6 +143,7 @@ export default function GitHubUserDashboard() {
         throw err;
       }
     }
+
     async function handleOAuthFlow() {
       if (code && !accessToken) {
         setFetchError("");

@@ -39,6 +39,49 @@ To enable secure GitHub OAuth integration, you must set your GitHub OAuth **Clie
    REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
    ```
 
+### 💡 Configurable Token Exchange Endpoint for OAuth (FastAPI or Node)
+
+By default, the dashboard POSTs the OAuth code to:
+```
+http://localhost:3001/token
+```
+To use your own external FastAPI backend for code exchange, add this to your `.env` file:
+```
+REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
+```
+Or use the deployed FastAPI endpoint URL as needed.
+
+**Token Exchange Protocol:**  
+The frontend will POST to the endpoint with:
+```json
+{ "code": "<OAUTH_CODE>" }
+```
+The backend should reply (status 200) with:
+```json
+{ "access_token": "<mock_access_token>" }
+```
+
+#### Example: Minimal FastAPI token endpoint
+
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+# PUBLIC_INTERFACE
+@app.post("/token")
+async def exchange_token(data: dict):
+    code = data.get("code")
+    if not code:
+        return JSONResponse({"error": "Missing code"}, status_code=400)
+    # Verify code... (mock/demo)
+    return {"access_token": "mock_access_token"}
+```
+
+You may run this (with `uvicorn main:app --reload --port 8000`) and point the dashboard config as above.
+
+
 3. Restart your development server if it's running.
 
 **Do NOT commit client secrets to source control.** Never expose your Client Secret in frontend code.
