@@ -57,8 +57,38 @@ export default function GitHubUserDashboard() {
   const [fetchError, setFetchError] = useState("");
 
   // --- GitHub OAuth Integration ---
-  // For demo: use Implicit Grant Flow using environment variable for client_id to enhance security and flexibility.
-  const GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID;
+  /**
+   * Environment Variable Guidance (toolchain support):
+   * - If using Create React App (CRA) or Vite: use REACT_APP_GITHUB_CLIENT_ID in .env, e.g.
+   *     REACT_APP_GITHUB_CLIENT_ID=your_client_id_here
+   * - For custom webpack: ensure DefinePlugin is configured to inject env variables as needed.
+   * 
+   * This logic will warn if the Client ID is missing or not injected, and avoids assuming 'process' is always available.
+   */
+  let GITHUB_CLIENT_ID;
+  // Try CRA/Vite standard first
+  if (typeof process !== "undefined" &&
+      process.env &&
+      (process.env.REACT_APP_GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID)) {
+    // CRA: REACT_APP_GITHUB_CLIENT_ID, Vite: VITE_GITHUB_CLIENT_ID
+    GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID;
+  } else if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_GITHUB_CLIENT_ID) {
+    // Vite through import.meta.env
+    GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
+  } else {
+    GITHUB_CLIENT_ID = undefined;
+  }
+
+  if (!GITHUB_CLIENT_ID) {
+    if (typeof window !== "undefined" && window.console && window.console.warn) {
+      window.console.warn(
+        "[GitHubUserDashboard] GitHub OAuth Client ID is NOT set. " +
+        "Please set REACT_APP_GITHUB_CLIENT_ID in your .env file if using CRA, " +
+        "or VITE_GITHUB_CLIENT_ID for Vite, then restart your dev server."
+      );
+    }
+  }
+
   const REDIRECT_URI = window.location.origin; // Should match registered OAuth app
   const scope = "read:user repo"; // Adjust as needed
 
