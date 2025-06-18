@@ -27,46 +27,109 @@ Removing it will break editor integration and visual editing features.
 
 ## Getting Started
 
-### ⚠️ Environment Variable Setup for GitHub OAuth
+### ⚠️ Environment Variable Setup for GitHub OAuth (React + FastAPI/Backend)
 
-To enable secure GitHub OAuth integration, you must set your GitHub OAuth **Client ID** as an environment variable.
+To enable secure GitHub OAuth integration and configure backend token exchange, you must provide your OAuth client information and token endpoint as environment variables in a `.env` file **in the `github_user_dashboard/` folder**.
 
-1. In the `github_user_dashboard/` directory, create a file named **.env** (if not already present).
+#### 1. Create `.env` file if not already present
+```env
+# .env in github_user_dashboard/
+REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
 
-2. Add your GitHub client ID (for example):
+# Where your FastAPI (or compatible) backend for code->token exchange lives:
+REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
 
-   ```
-   REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
-   ```
+# [OPTIONAL - For demo/testing only, never in production!]
+REACT_APP_GITHUB_CLIENT_SECRET=<your_client_secret>
+```
+> **Do NOT commit client secrets to source!** `client_secret` is used ONLY for isolated, internal backend testing. Production systems MUST NOT expose it to the frontend.
 
 ---
 
-### 🔧 Configuring the OAuth Token Exchange Endpoint
+### 🔧 How the OAuth token exchange works
 
-By default, the dashboard POSTs the OAuth code to:
+- The React app POSTs the OAuth code, client_id, and, if present, client_secret, as `application/x-www-form-urlencoded` to the endpoint defined by `REACT_APP_TOKEN_ENDPOINT` (default: `http://localhost:3001/token`).
+- The endpoint is designed for use with a secure FastAPI (or Node.js/other) backend that performs server-to-server GitHub token exchange.
+
+#### Example `.env`
+
+```env
+REACT_APP_GITHUB_CLIENT_ID=Ov23lioFpdZyTjydbxm0
+REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
+# NEVER commit secrets:
+REACT_APP_GITHUB_CLIENT_SECRET=demo_value_only_for_backend_testing
 ```
-http://localhost:3001/token
+
+---
+
+### 💡 Integration Contract for Token Exchange Endpoint (Backend Service)
+
+The frontend will:
+- **POST** to the endpoint as configured, sending `code`, `client_id`, and (rarely, if set), `client_secret` as form data (`x-www-form-urlencoded`):
+
+**POST body example**
 ```
-To use your own FastAPI backend (or any endpoint matching the x-www-form-urlencoded contract):
+code=abc123&client_id=Ov23lioFpdZyTjydbxm0[&client_secret=demo_val]
+```
 
-1. Set the environment variable in your `github_user_dashboard/.env` file as:
-   ```
-   REACT_APP_TOKEN_ENDPOINT=http://localhost:8000/token
-   ```
-2. (Optional) For internal testing only, **never commit secrets to source control**:
-   ```
-   REACT_APP_GITHUB_CLIENT_SECRET=<your_client_secret>   # [For demo/server-side experimentation only!]
-   ```
+**Backend HTTP Response (FastAPI/compatible)**
+- Must return JSON:
+```json
+{ "access_token": "<token_value>" }
+```
+- If error: HTTP non-200, ideally `{ "error": "msg" }` in JSON.
 
-**Endpoint rules:**
-- React will POST `code` and `client_id` as x-www-form-urlencoded.
-- Example body sent:
-  ```
-  code=abc123&client_id=Ov23lioFpdZyTjydbxm0
-  ```
-- Do **not** expose your GitHub OAuth `client_secret` to frontend!
+#### Sample curl for developers
+```bash
+curl -X POST http://localhost:8000/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "code=the_oauth_code_here&client_id=Ov23lioFpdZyTjydbxm0"
+```
 
-See below for sample FastAPI contract and usage.
+#### Minimal FastAPI endpoint
+
+```python
+from fastapi import FastAPI, Form
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+# PUBLIC_INTERFACE
+@app.post("/token")
+async def exchange_token(
+    code: str = Form(...),
+    client_id: str = Form(None),
+    client_secret: str = Form(None)  # Accept/ignore in backend as policy allows
+):
+    if not code:
+        return JSONResponse({"error": "Missing code"}, status_code=400)
+    # Optionally validate client_id/client_secret
+    return {"access_token": "mock_access_token"}
+```
+
+---
+
+#### CORS for local React development
+
+Make sure your FastAPI backend enables CORS for the React development server:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"], allow_headers=["*"],
+)
+```
+> For prod, restrict allowed origins appropriately.
+
+---
+
+#### Security best practices
+
+- Never commit or expose your GitHub `client_secret` in any frontend code.
+- For automated tests or mock/demo: set a placeholder secret ONLY in local .env never in production or in source control.
+- The React frontend always POSTs to an endpoint defined in `.env`. Any value in a sample repo/demo is for developer testing only.
 
 ### 💡 Configurable Token Exchange Endpoint for OAuth (FastAPI or Node)
 

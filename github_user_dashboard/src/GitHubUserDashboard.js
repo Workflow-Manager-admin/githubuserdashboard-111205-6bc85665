@@ -133,17 +133,32 @@ export default function GitHubUserDashboard() {
      * @param {string} authCode
      * @returns {Promise<{ access_token: string }>} Access token on success
      */
+    /**
+     * PUBLIC_INTERFACE
+     * Exchanges the OAuth code for an access token by posting code, client_id, and (if set) client_secret as x-www-form-urlencoded
+     * to the configured FastAPI (or compatible) backend endpoint specified in the environment variable.
+     * Reads access_token from JSON response per documented contract.
+     * 
+     * @param {string} authCode - The authorization code received from GitHub OAuth redirect.
+     * @returns {Promise<{ access_token: string }>} The JSON object containing the access token.
+     */
     async function exchangeCodeForToken(authCode) {
       const backendUrl = getTokenEndpointUrl();
-      // Prepare form body for x-www-form-urlencoded
-      let form = [];
-      form.push("code=" + encodeURIComponent(authCode));
-      if (GITHUB_CLIENT_ID) form.push("client_id=" + encodeURIComponent(GITHUB_CLIENT_ID));
-      // For test/lab: If a secret exists in env, append for mock mode (never in production!)
-      if (typeof process !== "undefined" && process.env && process.env.REACT_APP_GITHUB_CLIENT_SECRET) {
-        form.push("client_secret=" + encodeURIComponent(process.env.REACT_APP_GITHUB_CLIENT_SECRET));
+
+      // Build the form body for x-www-form-urlencoded as required by FastAPI contract
+      const formParams = [];
+      formParams.push("code=" + encodeURIComponent(authCode));
+      if (GITHUB_CLIENT_ID) formParams.push("client_id=" + encodeURIComponent(GITHUB_CLIENT_ID));
+      // ONLY include client_secret if provided via env for test/dev lab (never commit to source, never expose to prod)
+      if (
+        typeof process !== "undefined" &&
+        process.env &&
+        process.env.REACT_APP_GITHUB_CLIENT_SECRET
+      ) {
+        formParams.push("client_secret=" + encodeURIComponent(process.env.REACT_APP_GITHUB_CLIENT_SECRET));
       }
-      const body = form.join("&");
+      const body = formParams.join("&");
+
       try {
         const resp = await fetch(backendUrl, {
           method: "POST",
@@ -159,8 +174,9 @@ export default function GitHubUserDashboard() {
               : `Token exchange failed (HTTP ${resp.status}): ${resp.statusText}`
           );
         }
+        // Expect FastAPI (or compatible) to return JSON: { "access_token": "<string>" }
         const json = await resp.json();
-        if (typeof json.access_token !== "string" || !json.access_token) {
+        if (!json || typeof json.access_token !== "string" || !json.access_token) {
           throw new Error("Token endpoint did not provide access_token");
         }
         return json;
