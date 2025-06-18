@@ -44,12 +44,14 @@ REACT_APP_GITHUB_CLIENT_SECRET=<your_client_secret>
 ```
 > **Never commit client secrets to source!** `client_secret` is only for local/internal testing.
 
+You may also use `REACT_APP_TOKEN_ENDPOINT` as a fallback for legacy setups; but `REACT_APP_TOKEN_EXCHANGE_ENDPOINT` is recommended.
+
 ---
 
 ### 🔧 How OAuth Code Exchange Works
 
-- The React app POSTs the OAuth code, client_id, client_secret (if present), redirect_uri, and state as `application/x-www-form-urlencoded` to the token endpoint defined by `REACT_APP_TOKEN_EXCHANGE_ENDPOINT`.
-- Endpoint is compatible with FastAPI or similar; perform server-side code-to-token exchange.
+- The React app will POST the OAuth code, client_id, client_secret (if present in .env), redirect_uri (always), and state (if present in local storage) as `application/x-www-form-urlencoded` to the endpoint defined by `REACT_APP_TOKEN_EXCHANGE_ENDPOINT`.
+- The backend endpoint should be implemented in FastAPI (or similar), performing the code-to-token exchange with GitHub's API securely.
 
 #### Sample `.env`:
 ```env
@@ -63,45 +65,56 @@ REACT_APP_GITHUB_CLIENT_SECRET=demo_value_only_for_backend_testing
 
 ### 💡 OAuth Token Endpoint Integration (Frontend <-> FastAPI or Node.js)
 
-The frontend sends a POST request structured as:
+When the user authorizes, the dashboard POSTs as follows:
 
 #### Example POST to Token Endpoint:
-- **URL:** from `REACT_APP_TOKEN_EXCHANGE_ENDPOINT` (default: `http://localhost:3001/token`)
+- **URL:** determined by `REACT_APP_TOKEN_EXCHANGE_ENDPOINT` (default: `http://localhost:3001/token`)
 - **Content-Type:** `application/x-www-form-urlencoded`
 - **Body Fields:**  
-  - `code` (required) — from GitHub OAuth  
+  - `code` (required) — the authorization code received from GitHub  
   - `client_id` (required)  
-  - `client_secret` (optional, dev only)  
-  - `redirect_uri` (always provided)  
-  - `state` (if available; optional for some setups)
+  - `client_secret` (optional, if defined in .env; never sent from production frontend)  
+  - `redirect_uri` (always sent, matches your site origin)  
+  - `state` (if available; highly recommended for security, sent from localStorage)
 
 ```
 code=abc123&client_id=Ov23lioFpdZyTjydbxm0[&client_secret=demo_val]&redirect_uri=https://yourapp.com/callback[&state=xyz]
 ```
 
-#### Example (fetch, JavaScript):
+#### JavaScript/React Example (`fetch`):
+
 ```js
+const payload = {
+  code: receivedCode,
+  client_id: process.env.REACT_APP_GITHUB_CLIENT_ID,
+  redirect_uri: window.location.origin
+};
+if (process.env.REACT_APP_GITHUB_CLIENT_SECRET) {
+  payload.client_secret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
+}
+const state = window.localStorage.getItem("gh_oauth_state");
+if (state) payload.state = state;
+
 fetch(process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Accept': 'application/json'
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Accept": "application/json"
   },
-  body: new URLSearchParams({
-    client_id: 'your_client_id',
-    client_secret: 'your_client_secret', // (omit unless for dev)
-    code: received_code,
-    redirect_uri: 'https://yourapp.com/callback',
-    state: stored_state
-  }),
+  body: new URLSearchParams(payload).toString(),
 })
-.then(res => res.json())
-.then(data => {
-  console.log('access_token:', data.access_token);
-});
+  .then(res => {
+    if (!res.ok) throw new Error("Token exchange failed");
+    return res.json();
+  })
+  .then(data => {
+    // access_token is now available for use
+    console.log("access_token:", data.access_token);
+  });
 ```
 
 #### Example (curl):
+
 ```bash
 curl -X POST http://localhost:8000/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -109,6 +122,7 @@ curl -X POST http://localhost:8000/token \
 ```
 
 #### Expected Backend Response (JSON):
+
 ```json
 { "access_token": "<token_value>" }
 ```

@@ -104,15 +104,24 @@ export default function GitHubUserDashboard() {
    * The URL should be the FastAPI or other backend POST endpoint to exchange code for access_token.
    */
   function getTokenEndpointUrl() {
-    // 1. CRA env variable (recommended): REACT_APP_TOKEN_ENDPOINT, e.g., http://localhost:3001/token or FastAPI URL
-    if (typeof process !== "undefined" && process.env && process.env.REACT_APP_TOKEN_ENDPOINT) {
-      return process.env.REACT_APP_TOKEN_ENDPOINT;
+    // Prefer new REACT_APP_TOKEN_EXCHANGE_ENDPOINT (.env), then REACT_APP_TOKEN_ENDPOINT, then fallback.
+    if (typeof process !== "undefined" && process.env) {
+      if (process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT) {
+        return process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT;
+      }
+      if (process.env.REACT_APP_TOKEN_ENDPOINT) {
+        return process.env.REACT_APP_TOKEN_ENDPOINT;
+      }
     }
-    // 2. Vite env support (for completeness)
-    if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_TOKEN_ENDPOINT) {
-      return import.meta.env.VITE_TOKEN_ENDPOINT;
+    // Vite support (for completeness)
+    if (typeof import.meta !== "undefined" && import.meta.env) {
+      if (import.meta.env.VITE_TOKEN_EXCHANGE_ENDPOINT) {
+        return import.meta.env.VITE_TOKEN_EXCHANGE_ENDPOINT;
+      }
+      if (import.meta.env.VITE_TOKEN_ENDPOINT) {
+        return import.meta.env.VITE_TOKEN_ENDPOINT;
+      }
     }
-    // 3. Fallback: common dev, or cloud mock or FastAPI address as example
     return "http://localhost:3001/token";
   }
 
@@ -124,8 +133,8 @@ export default function GitHubUserDashboard() {
     // PUBLIC_INTERFACE
     /** 
      * PUBLIC_INTERFACE
-     * Exchanges the OAuth code for an access token by posting code, client_id, client_secret, redirect_uri, and state
-     * (as required) as x-www-form-urlencoded to the configured FastAPI (or compatible) backend endpoint.
+     * Exchanges the OAuth code for an access token by posting code/client_id/client_secret (if set)
+     * as x-www-form-urlencoded to the configured FastAPI (or compatible) backend endpoint.
      * Endpoint is settable via REACT_APP_TOKEN_EXCHANGE_ENDPOINT or REACT_APP_TOKEN_ENDPOINT in .env/config.
      * Reads access_token from JSON response per documented contract.
      * 
@@ -133,35 +142,37 @@ export default function GitHubUserDashboard() {
      * @returns {Promise<{ access_token: string }>} The JSON object containing the access token.
      */
     async function exchangeCodeForToken(authCode) {
-      /**
-       * Exchanges OAuth code for access_token via FastAPI endpoint.
-       * Sends code/client_id/client_secret as x-www-form-urlencoded,
-       * in strict alignment with requirements and CORS compatibility.
-       */
-      const backendUrl = (
-        (typeof process !== "undefined" && process.env && process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT)
-        ? process.env.REACT_APP_TOKEN_EXCHANGE_ENDPOINT
-        : getTokenEndpointUrl()
-      );
-      // Construct URLSearchParams for x-www-form-urlencoded
+      /*
+        Exchanges OAuth code for access_token by POSTing to a backend endpoint
+        as 'application/x-www-form-urlencoded', sending code, client_id, and (optionally)
+        client_secret if it is available in env, to the endpoint defined in .env config.
+        The returned JSON should contain { access_token }.
+      */
+      const backendUrl = getTokenEndpointUrl();
+
+      // Prepare payload
       const payload = {
         code: authCode,
         client_id: GITHUB_CLIENT_ID,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: REDIRECT_URI
       };
-      // Conditionally include optional client_secret (dev/demo only)
+      // Add optional client_secret for dev/demo if present (not in production!)
+      let clientSecret = null;
       if (
         typeof process !== "undefined" &&
         process.env &&
         process.env.REACT_APP_GITHUB_CLIENT_SECRET
       ) {
-        payload.client_secret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
+        clientSecret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
       }
-      // Optionally include state if available (OAuth best-practice)
+      if (clientSecret) {
+        payload.client_secret = clientSecret;
+      }
+      // Add state if present in localStorage (OAuth best-practice)
       const storedState = window.localStorage.getItem("gh_oauth_state");
       if (storedState) payload.state = storedState;
 
-      // Use new URLSearchParams to build form body
+      // Use URLSearchParams to encode x-www-form-urlencoded body
       const formBody = new URLSearchParams(payload);
 
       try {
